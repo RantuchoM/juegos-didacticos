@@ -2,9 +2,14 @@ import { PALABRAS } from './data/palabras.js';
 import {
     MSG_CASI, MSG_BIEN, MSG_CINCO_EJERCICIOS,
     VINCULAR_GRUPOS, VINCULAR_NUMEROS_SIN_PAR, EMOJIS_CONTAR,
-    NIVELES_CONTAR_UNIR, NIVELES_MAT, MIN_SILABAS_JUEGO,
+    MIN_SILABAS_JUEGO,
     JUEGOS_ALEATORIOS, IDS_SIGUIENTE, AUTO_SIGUIENTE_MS
 } from './config.js';
+import {
+    getNivelJuego, getMaxEnPantalla, getMaxRespuesta, maxDigitosJuego,
+    registrarAciertoMat, registrarFalloMat
+} from './dificultad-mat.js';
+import { numeroATextoEspanol } from './numeros-es.js';
 import {
     hablar, hablarSilaba, hablarCadena, hablarNumero, hablarNumeroEscrito,
     decirErrorOpcion, cancelarVoz
@@ -15,6 +20,7 @@ let celebracionAbierta = false;
 
 const elCelebracion = document.getElementById('celebracion-cinco');
 const elCelebracionEmoji = document.getElementById('celebracion-emoji');
+const elCelebracionTexto = document.getElementById('celebracion-texto');
 
 function cerrarCelebracion() {
     celebracionAbierta = false;
@@ -24,11 +30,12 @@ function cerrarCelebracion() {
 
 function mostrarCelebracionCinco() {
     cancelarAutoSiguiente();
+    cancelarVoz();
     celebracionAbierta = true;
     elCelebracionEmoji.textContent = Math.random() < 0.5 ? '🎂' : '🎈🎈🎈🎈🎈';
+    elCelebracionTexto.textContent = MSG_CINCO_EJERCICIOS;
     elCelebracion.classList.remove('oculto');
-    sonidoCorrecto();
-    hablar(MSG_CINCO_EJERCICIOS);
+    sonidoTriunfoCinco();
 }
 
 function registrarEjercicioCompletado() {
@@ -72,6 +79,49 @@ function getAudio() {
     return audioCtx;
 }
 
+function reanudarAudioSiHaceFalta(ctx) {
+    if (ctx.state === 'suspended') void ctx.resume();
+}
+
+const FREQ_PULSACION_NUMERO = [440, 494, 523, 587, 659, 698, 784, 880, 988, 1047];
+
+function sonidoPulsacionNumero(digito) {
+    const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
+    const idx = typeof digito === 'string' && digito >= '0' && digito <= '9'
+        ? parseInt(digito, 10)
+        : 5;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = FREQ_PULSACION_NUMERO[idx];
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const t = ctx.currentTime;
+    const dur = 0.04;
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
+}
+
+function sonidoPulsacionLetra() {
+    const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 600;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const t = ctx.currentTime;
+    const dur = 0.04;
+    gain.gain.setValueAtTime(0.09, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
+}
+
 function sonidoCorrecto() {
     const ctx = getAudio();
     [523, 659, 784].forEach((freq, i) => {
@@ -102,6 +152,26 @@ function sonidoFestejoEjercicio() {
         gain.gain.exponentialRampToValueAtTime(0.01, t + 0.22);
         osc.start(t);
         osc.stop(t + 0.22);
+    });
+}
+
+function sonidoTriunfoCinco() {
+    const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
+    const notas = [523, 659, 784, 1047, 1319];
+    notas.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const t = ctx.currentTime + i * 0.13;
+        const dur = i === notas.length - 1 ? 0.5 : 0.22;
+        gain.gain.setValueAtTime(0.34, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+        osc.start(t);
+        osc.stop(t + dur);
     });
 }
 
@@ -151,138 +221,6 @@ function generarRondaVincular(max) {
 
 
 
-let nivelContarUnir = Math.min(
-    Math.max(parseInt(localStorage.getItem('nivelContarUnir') || '1', 10), 1),
-    NIVELES_CONTAR_UNIR.length
-);
-let aciertosSeguidosContarUnir = 0;
-
-let nivelMatematica = Math.min(
-    Math.max(parseInt(localStorage.getItem('nivelMat') || '1', 10), 1),
-    NIVELES_MAT.length
-);
-let aciertosSeguidosMat = 0;
-
-function getNivelContarUnir() {
-    return NIVELES_CONTAR_UNIR[nivelContarUnir - 1];
-}
-
-function getNivelMat() {
-    return NIVELES_MAT[nivelMatematica - 1];
-}
-
-function maxDigitosContarUnir() {
-    return getNivelContarUnir().max >= 10 ? 2 : 1;
-}
-
-function maxDigitosNivel() {
-    return getNivelMat().max >= 10 ? 2 : 1;
-}
-
-function guardarNivelContarUnir() {
-    localStorage.setItem('nivelContarUnir', String(nivelContarUnir));
-}
-
-function guardarNivelMat() {
-    localStorage.setItem('nivelMat', String(nivelMatematica));
-}
-
-function montarBarraNiveles(contNiveles, niveles, nivelActual, alCambiar) {
-    if (!contNiveles.dataset.montado) {
-        contNiveles.innerHTML = '';
-        niveles.forEach((n, i) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn-nivel-mat';
-            btn.textContent = String(i + 1);
-            btn.title = n.label;
-            btn.addEventListener('click', () => alCambiar(i + 1));
-            contNiveles.appendChild(btn);
-        });
-        contNiveles.dataset.montado = '1';
-    }
-    contNiveles.querySelectorAll('.btn-nivel-mat').forEach((btn, i) => {
-        btn.classList.toggle('activo', i + 1 === nivelActual);
-    });
-}
-
-function actualizarBarrasContarUnir() {
-    const nivel = getNivelContarUnir();
-    document.querySelectorAll('[data-barra-contar-unir]').forEach((barra) => {
-        const contNiveles = barra.querySelector('.barra-dificultad-niveles') || barra.querySelector('[id^="niveles-mat"]');
-        const contRango = barra.querySelector('.barra-dificultad-rango') || barra.querySelector('[id^="rango-mat"]');
-        if (!contNiveles) return;
-        montarBarraNiveles(contNiveles, NIVELES_CONTAR_UNIR, nivelContarUnir, (n) => {
-            nivelContarUnir = n;
-            aciertosSeguidosContarUnir = 0;
-            guardarNivelContarUnir();
-            actualizarBarrasContarUnir();
-        });
-        if (contRango) {
-            contRango.textContent = `Del ${nivel.label} · Unir: 4 imágenes y 6 números`;
-        }
-    });
-}
-
-function actualizarBarrasDificultad() {
-    const nivel = getNivelMat();
-    document.querySelectorAll('[data-barra-mat]').forEach((barra) => {
-        const contNiveles = barra.querySelector('.barra-dificultad-niveles');
-        const contRango = barra.querySelector('.barra-dificultad-rango');
-        if (!contNiveles) return;
-        montarBarraNiveles(contNiveles, NIVELES_MAT, nivelMatematica, (n) => {
-            nivelMatematica = n;
-            aciertosSeguidosMat = 0;
-            guardarNivelMat();
-            actualizarBarrasDificultad();
-        });
-        if (contRango) {
-            contRango.textContent = `Números del ${nivel.label}`;
-        }
-    });
-}
-
-function montarBarrasDificultadJuego() {
-    document.querySelectorAll('[data-barra-mat], [data-barra-contar-unir]').forEach((barra) => {
-        if (barra.dataset.montado) return;
-        barra.innerHTML = `
-            <div class="barra-dificultad-titulo">Nivel de números</div>
-            <div class="barra-dificultad-niveles"></div>
-            <div class="barra-dificultad-rango"></div>`;
-        barra.dataset.montado = '1';
-    });
-    actualizarBarrasContarUnir();
-    actualizarBarrasDificultad();
-}
-
-function registrarAciertoContarUnir() {
-    aciertosSeguidosContarUnir++;
-    if (aciertosSeguidosContarUnir >= 5 && nivelContarUnir < NIVELES_CONTAR_UNIR.length) {
-        nivelContarUnir++;
-        aciertosSeguidosContarUnir = 0;
-        guardarNivelContarUnir();
-        actualizarBarrasContarUnir();
-    }
-}
-
-function registrarFalloContarUnir() {
-    aciertosSeguidosContarUnir = 0;
-}
-
-function registrarAciertoMat() {
-    aciertosSeguidosMat++;
-    if (aciertosSeguidosMat >= 5 && nivelMatematica < NIVELES_MAT.length) {
-        nivelMatematica++;
-        aciertosSeguidosMat = 0;
-        guardarNivelMat();
-        actualizarBarrasDificultad();
-    }
-}
-
-function registrarFalloMat() {
-    aciertosSeguidosMat = 0;
-}
-
 // Entrada numérica compartida (pantalla + teclado físico)
 let entradaNumerica = null;
 
@@ -299,6 +237,7 @@ function digitoEntradaNumerica(d) {
     const max = entradaNumerica.maxDigitos();
     if (entradaNumerica.valor().length >= max) return;
     if (entradaNumerica.valor() === '' && d === '0') return;
+    sonidoPulsacionNumero(d);
     entradaNumerica.setValor(entradaNumerica.valor() + d);
     entradaNumerica.actualizarPantalla();
 }
@@ -431,6 +370,107 @@ function numerosDistractores(correcto, cantidad, min, max) {
     return mezclar([...nums]);
 }
 
+function tamanioEmojiSuma(cantidad) {
+    if (cantidad <= 5) return 'clamp(0.95rem, 4.5vw, 1.5rem)';
+    if (cantidad <= 10) return 'clamp(0.8rem, 3.8vw, 1.25rem)';
+    if (cantidad <= 15) return 'clamp(0.68rem, 3.2vw, 1.05rem)';
+    return 'clamp(0.55rem, 2.6vw, 0.9rem)';
+}
+
+function generarRondaSuma(juegoId = 'sumar-escribir') {
+    const max = getNivelJuego(juegoId).max;
+    const a = numeroAleatorio(1, max);
+    const b = numeroAleatorio(1, max);
+    const emojis = mezclar([...EMOJIS_CONTAR]).slice(0, 2);
+    return {
+        a,
+        b,
+        suma: a + b,
+        emojiA: emojis[0],
+        emojiB: emojis[1]
+    };
+}
+
+function renderObjetosEn(contenedor, emoji, cantidad, tamanioFn) {
+    contenedor.innerHTML = '';
+    const fz = tamanioFn(cantidad);
+    for (let i = 0; i < cantidad; i++) {
+        const span = document.createElement('span');
+        span.className = 'objeto-item';
+        span.style.fontSize = fz;
+        span.textContent = emoji;
+        contenedor.appendChild(span);
+    }
+}
+
+function montarPanelSuma(ronda, elObjA, elCantA, elObjB, elCantB) {
+    renderObjetosEn(elObjA, ronda.emojiA, ronda.a, tamanioEmojiSuma);
+    renderObjetosEn(elObjB, ronda.emojiB, ronda.b, tamanioEmojiSuma);
+    elCantA.textContent = ronda.a;
+    elCantB.textContent = ronda.b;
+}
+
+function hablarSuma(a, b) {
+    hablar(`${numeroATextoEspanol(a)} más ${numeroATextoEspanol(b)}`);
+}
+
+function tamanioEmojiResta(cantidad) {
+    if (cantidad <= 6) return 'clamp(1rem, 4.5vw, 1.6rem)';
+    if (cantidad <= 12) return 'clamp(0.85rem, 3.8vw, 1.3rem)';
+    if (cantidad <= 20) return 'clamp(0.72rem, 3.2vw, 1.1rem)';
+    return 'clamp(0.58rem, 2.6vw, 0.9rem)';
+}
+
+function crearEmojiResta(emoji, cantidad) {
+    const span = document.createElement('span');
+    span.className = 'objeto-item';
+    span.style.fontSize = tamanioEmojiResta(cantidad);
+    span.textContent = emoji;
+    return span;
+}
+
+function generarRondaResta(juegoId = 'restar-escribir') {
+    const maxTotal = Math.max(2, getMaxEnPantalla(juegoId));
+    const minTotal = Math.min(4, maxTotal);
+    const total = numeroAleatorio(minTotal, maxTotal);
+    const resta = numeroAleatorio(1, total - 1);
+    const emoji = EMOJIS_CONTAR[numeroAleatorio(0, EMOJIS_CONTAR.length - 1)];
+    return {
+        total,
+        resta,
+        resultado: total - resta,
+        emoji
+    };
+}
+
+function montarPanelResta(ronda, elVisual) {
+    const { total, resta, emoji } = ronda;
+    const fuera = total - resta;
+
+    elVisual.innerHTML = '';
+    elVisual.className = 'resta-visual-interna';
+
+    const elFuera = document.createElement('div');
+    elFuera.className = 'resta-fuera';
+    for (let i = 0; i < fuera; i++) {
+        elFuera.appendChild(crearEmojiResta(emoji, fuera));
+    }
+
+    const elMarco = document.createElement('div');
+    elMarco.className = 'resta-marco-menos';
+    elMarco.setAttribute('aria-label', `${resta} para restar`);
+    for (let i = 0; i < resta; i++) {
+        elMarco.appendChild(crearEmojiResta(emoji, resta));
+    }
+
+    elVisual.appendChild(elFuera);
+    elVisual.appendChild(elMarco);
+}
+
+function hablarResta(total, resta) {
+    hablar(`${numeroATextoEspanol(total)} menos ${numeroATextoEspanol(resta)}`);
+}
+
 // --- Navegación ---
 const menu = document.getElementById('menu');
 const juegoTeclado = document.getElementById('juego-teclado');
@@ -441,10 +481,14 @@ const juegoContar = document.getElementById('juego-contar');
 const juegoVincular = document.getElementById('juego-vincular');
 const juegoEscribirNumero = document.getElementById('juego-escribir-numero');
 const juegoElegirNumero = document.getElementById('juego-elegir-numero');
+const juegoSumarEscribir = document.getElementById('juego-sumar-escribir');
+const juegoSumarElegir = document.getElementById('juego-sumar-elegir');
+const juegoRestarEscribir = document.getElementById('juego-restar-escribir');
 
 const seccionesJuego = [
     juegoTeclado, juegoSilabas, juegoPalabraImagen, juegoImagenPalabra,
-    juegoContar, juegoVincular, juegoEscribirNumero, juegoElegirNumero
+    juegoContar, juegoVincular, juegoEscribirNumero, juegoElegirNumero,
+    juegoSumarEscribir, juegoSumarElegir, juegoRestarEscribir
 ];
 
 let modoAleatorio = false;
@@ -467,6 +511,7 @@ function mostrarJuego(id) {
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
     if (id === 'teclado') {
         juegoTeclado.classList.remove('oculto');
+        longitudTecladoAnterior = textoActual.length;
         requestAnimationFrame(() => pantalla.focus());
     }
     if (id === 'silabas') {
@@ -497,6 +542,18 @@ function mostrarJuego(id) {
         juegoElegirNumero.classList.remove('oculto');
         iniciarElegirNumero();
     }
+    if (id === 'sumar-escribir') {
+        juegoSumarEscribir.classList.remove('oculto');
+        iniciarSumarEscribir();
+    }
+    if (id === 'sumar-elegir') {
+        juegoSumarElegir.classList.remove('oculto');
+        iniciarSumarElegir();
+    }
+    if (id === 'restar-escribir') {
+        juegoRestarEscribir.classList.remove('oculto');
+        iniciarRestarEscribir();
+    }
 }
 
 function volverMenu() {
@@ -510,6 +567,7 @@ function volverMenu() {
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
     textoActual = '';
     pantalla.value = '';
+    longitudTecladoAnterior = 0;
     pantalla.blur();
 }
 
@@ -529,6 +587,7 @@ document.querySelectorAll('[data-volver]').forEach((btn) => {
 // --- Juego teclado ---
 const pantalla = document.getElementById('pantalla');
 let textoActual = '';
+let longitudTecladoAnterior = 0;
 
 function filtrarTextoTeclado(texto) {
     return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
@@ -536,6 +595,10 @@ function filtrarTextoTeclado(texto) {
 
 function actualizarTecladoDesdeInput() {
     const filtrado = filtrarTextoTeclado(pantalla.value);
+    if (filtrado.length > longitudTecladoAnterior) {
+        sonidoPulsacionLetra();
+    }
+    longitudTecladoAnterior = filtrado.length;
     if (filtrado !== pantalla.value) pantalla.value = filtrado;
     textoActual = filtrado;
     if (textoActual) hablarCadena(textoActual);
@@ -557,6 +620,7 @@ document.addEventListener('keydown', (event) => {
 
     if (!juegoTeclado.classList.contains('oculto') && document.activeElement !== pantalla) {
         if (tecla.length === 1 && tecla.match(/[a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/i)) {
+            sonidoPulsacionLetra();
             textoActual += tecla;
             pantalla.value = textoActual;
             hablarCadena(textoActual);
@@ -722,6 +786,7 @@ function ponerEnSlot(fichaId) {
     if (bloqueado) return;
     const idx = primerSlotLibre();
     if (idx === -1) return;
+    sonidoPulsacionLetra();
     slots[idx] = fichaId;
     const silaba = fichas.find((f) => f.id === fichaId).texto;
     fichas.find((f) => f.id === fichaId).usada = true;
@@ -976,15 +1041,15 @@ function iniciarContar() {
     btnContarSiguiente.classList.add('oculto');
     elContarMensaje.textContent = '';
     elContarMensaje.className = 'mensaje-quiz';
-    const nivel = getNivelContarUnir();
-    contarCantidad = numeroAleatorio(1, nivel.max);
+    const max = getMaxEnPantalla('contar');
+    contarCantidad = numeroAleatorio(1, max);
     const emoji = EMOJIS_CONTAR[numeroAleatorio(0, EMOJIS_CONTAR.length - 1)];
     renderObjetos(elContarObjetos, emoji, contarCantidad);
     elContarPantalla.textContent = '?';
 
     activarEntradaNumerica({
         bloqueado: () => contarBloqueado,
-        maxDigitos: maxDigitosContarUnir,
+        maxDigitos: () => maxDigitosJuego('contar'),
         valor: () => contarEntrada,
         setValor: (v) => { contarEntrada = v; },
         actualizarPantalla: () => {
@@ -994,7 +1059,7 @@ function iniciarContar() {
     });
 
     montarTecladoNumerico(elContarTeclado, {
-        maxDigitos: maxDigitosContarUnir(),
+        maxDigitos: maxDigitosJuego('contar'),
         onDigito: (d) => digitoEntradaNumerica(d),
         onBorrar: borrarEntradaNumerica,
         onAceptar: aceptarEntradaNumerica
@@ -1010,7 +1075,7 @@ function verificarContar() {
         elContarMensaje.textContent = MSG_BIEN;
         elContarMensaje.classList.add('ok');
         hablarNumero(contarCantidad);
-        registrarAciertoContarUnir();
+        registrarAciertoMat('contar');
         btnContarSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
         programarAutoSiguiente();
@@ -1019,7 +1084,7 @@ function verificarContar() {
         elContarMensaje.textContent = MSG_CASI;
         elContarMensaje.classList.add('mal');
         decirErrorOpcion(contarEntrada);
-        registrarFalloContarUnir();
+        registrarFalloMat('contar');
         contarEntrada = '';
         elContarPantalla.textContent = '?';
     }
@@ -1059,8 +1124,8 @@ function iniciarVincular() {
     elVincularMensaje.textContent = '';
     elVincularMensaje.className = 'mensaje-quiz';
 
-    const nivel = getNivelContarUnir();
-    const ronda = generarRondaVincular(nivel.max);
+    const max = getMaxEnPantalla('vincular');
+    const ronda = generarRondaVincular(max);
     const emojis = mezclar([...EMOJIS_CONTAR]).slice(0, VINCULAR_GRUPOS);
     vincularDatos = ronda.cantidades.map((n, i) => ({ cantidad: n, emoji: emojis[i] }));
     vincularNums = ronda.numeros;
@@ -1090,14 +1155,18 @@ function iniciarVincular() {
         btn.className = 'vincular-numero';
         btn.textContent = num;
         btn.dataset.idx = j;
-        btn.addEventListener('click', () => seleccionarNumero(j, btn));
+        btn.addEventListener('click', () => {
+            sonidoPulsacionNumero(String(num));
+            seleccionarNumero(j, btn);
+        });
         elVincularNumeros.appendChild(btn);
     });
 
     activarTecladoMat({
         onDigitoVincular: (d) => {
             if (vincularBloqueado || vincularSelObj === null) return;
-            if (vincularEntradaKb.length >= maxDigitosContarUnir()) return;
+            if (vincularEntradaKb.length >= maxDigitosJuego('vincular')) return;
+            sonidoPulsacionNumero(d);
             vincularEntradaKb += d;
         },
         onBorrarVincular: () => {
@@ -1160,7 +1229,7 @@ function intentarVincular() {
             desactivarTecladoMat();
             elVincularMensaje.textContent = MSG_BIEN;
             elVincularMensaje.classList.add('ok');
-            registrarAciertoContarUnir();
+                    registrarAciertoMat('vincular');
             btnVincularSiguiente.classList.remove('oculto');
             registrarEjercicioCompletado();
             programarAutoSiguiente();
@@ -1170,7 +1239,7 @@ function intentarVincular() {
         elVincularMensaje.textContent = MSG_CASI;
         elVincularMensaje.classList.add('mal');
         decirErrorOpcion(numero);
-        registrarFalloContarUnir();
+        registrarFalloMat('vincular');
         vincularEntradaKb = '';
         setTimeout(limpiarSeleccionVincular, 400);
     }
@@ -1198,13 +1267,12 @@ function iniciarEscribirNumero() {
     btnEnSiguiente.classList.add('oculto');
     elEnMensaje.textContent = '';
     elEnMensaje.className = 'mensaje-quiz';
-    const nivel = getNivelMat();
-    enObjetivo = numeroAleatorio(1, nivel.max);
+    enObjetivo = numeroAleatorio(1, getNivelJuego('escribir-numero').max);
     elEnPantalla.textContent = '?';
 
     activarEntradaNumerica({
         bloqueado: () => enBloqueado,
-        maxDigitos: maxDigitosNivel,
+        maxDigitos: () => maxDigitosJuego('escribir-numero'),
         valor: () => enEntrada,
         setValor: (v) => { enEntrada = v; },
         actualizarPantalla: () => {
@@ -1214,7 +1282,7 @@ function iniciarEscribirNumero() {
     });
 
     montarTecladoNumerico(elEnTeclado, {
-        maxDigitos: maxDigitosNivel(),
+        maxDigitos: maxDigitosJuego('escribir-numero'),
         onDigito: (d) => digitoEntradaNumerica(d),
         onBorrar: borrarEntradaNumerica,
         onAceptar: aceptarEntradaNumerica
@@ -1231,7 +1299,7 @@ function verificarEscribirNumero() {
         elEnMensaje.textContent = MSG_BIEN;
         elEnMensaje.classList.add('ok');
         hablarNumero(enObjetivo);
-        registrarAciertoMat();
+        registrarAciertoMat('escribir-numero');
         btnEnSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
         programarAutoSiguiente();
@@ -1240,7 +1308,7 @@ function verificarEscribirNumero() {
         elEnMensaje.textContent = MSG_CASI;
         elEnMensaje.classList.add('mal');
         decirErrorOpcion(enEntrada);
-        registrarFalloMat();
+        registrarFalloMat('escribir-numero');
         enEntrada = '';
         elEnPantalla.textContent = '?';
     }
@@ -1273,9 +1341,9 @@ function iniciarElegirNumero() {
     btnElSiguiente.classList.add('oculto');
     elElMensaje.textContent = '';
     elElMensaje.className = 'mensaje-quiz';
-    const nivel = getNivelMat();
-    elObjetivo = numeroAleatorio(1, nivel.max);
-    const opciones = numerosDistractores(elObjetivo, 3, 1, nivel.max);
+    const max = getNivelJuego('elegir-numero').max;
+    elObjetivo = numeroAleatorio(1, max);
+    const opciones = numerosDistractores(elObjetivo, 3, 1, max);
 
     elElOpciones.innerHTML = '';
     opciones.forEach((num, idx) => {
@@ -1283,15 +1351,19 @@ function iniciarElegirNumero() {
         btn.type = 'button';
         btn.className = 'opcion-numero';
         btn.textContent = num;
-        btn.addEventListener('click', () => responderElegirNumero(num, btn));
+        btn.addEventListener('click', () => {
+            sonidoPulsacionNumero(String(num));
+            responderElegirNumero(num, btn);
+        });
         elElOpciones.appendChild(btn);
     });
 
     activarTecladoMat({
         onDigitoVincular: (d) => {
             if (elBloqueado) return;
-            if (elEntradaKb.length >= maxDigitosNivel()) return;
+            if (elEntradaKb.length >= maxDigitosJuego('elegir-numero')) return;
             if (elEntradaKb === '' && d === '0') return;
+            sonidoPulsacionNumero(d);
             elEntradaKb += d;
         },
         onBorrarVincular: () => {
@@ -1320,7 +1392,7 @@ function responderElegirNumero(num, btn) {
         elElMensaje.textContent = MSG_BIEN;
         elElMensaje.classList.add('ok');
         hablarNumero(elObjetivo);
-        registrarAciertoMat();
+        registrarAciertoMat('elegir-numero');
         elElOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
         btnElSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
@@ -1331,7 +1403,7 @@ function responderElegirNumero(num, btn) {
         elElMensaje.textContent = MSG_CASI;
         elElMensaje.classList.add('mal');
         decirErrorOpcion(num);
-        registrarFalloMat();
+        registrarFalloMat('elegir-numero');
         btn.disabled = true;
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }
@@ -1342,6 +1414,266 @@ document.getElementById('btn-el-escuchar').addEventListener('click', () => {
 });
 btnElSiguiente.addEventListener('click', () => {
     avanzarDespuesDeAcierto(iniciarElegirNumero);
+});
+
+// --- Matemática 5: Sumar (escribir) ---
+let seRonda = null;
+let seEntrada = '';
+let seBloqueado = false;
+
+const elSeObjA = document.getElementById('se-objetos-a');
+const elSeObjB = document.getElementById('se-objetos-b');
+const elSeCantA = document.getElementById('se-cant-a');
+const elSeCantB = document.getElementById('se-cant-b');
+const elSePantalla = document.getElementById('se-pantalla');
+const elSeTeclado = document.getElementById('se-teclado');
+const elSeMensaje = document.getElementById('se-mensaje');
+const btnSeSiguiente = document.getElementById('btn-se-siguiente');
+
+function iniciarSumarEscribir() {
+    desactivarEntradaNumerica();
+    desactivarTecladoMat();
+    seBloqueado = false;
+    seEntrada = '';
+    btnSeSiguiente.classList.add('oculto');
+    elSeMensaje.textContent = '';
+    elSeMensaje.className = 'mensaje-quiz';
+    seRonda = generarRondaSuma('sumar-escribir');
+    montarPanelSuma(seRonda, elSeObjA, elSeCantA, elSeObjB, elSeCantB);
+    elSePantalla.textContent = '?';
+
+    activarEntradaNumerica({
+        bloqueado: () => seBloqueado,
+        maxDigitos: () => maxDigitosJuego('sumar-escribir'),
+        valor: () => seEntrada,
+        setValor: (v) => { seEntrada = v; },
+        actualizarPantalla: () => {
+            elSePantalla.textContent = seEntrada || '?';
+        },
+        onAceptar: verificarSumarEscribir
+    });
+
+    montarTecladoNumerico(elSeTeclado, {
+        maxDigitos: maxDigitosJuego('sumar-escribir'),
+        onDigito: (d) => digitoEntradaNumerica(d),
+        onBorrar: borrarEntradaNumerica,
+        onAceptar: aceptarEntradaNumerica
+    });
+}
+
+function verificarSumarEscribir() {
+    if (seBloqueado || !seEntrada || !seRonda) return;
+    const respuesta = parseInt(seEntrada, 10);
+    if (respuesta === seRonda.suma) {
+        seBloqueado = true;
+        desactivarEntradaNumerica();
+        elSeMensaje.textContent = MSG_BIEN;
+        elSeMensaje.classList.add('ok');
+        hablarNumero(seRonda.suma);
+        registrarAciertoMat('sumar-escribir');
+        btnSeSiguiente.classList.remove('oculto');
+        registrarEjercicioCompletado();
+        programarAutoSiguiente();
+    } else {
+        sonidoIncorrecto();
+        elSeMensaje.textContent = MSG_CASI;
+        elSeMensaje.classList.add('mal');
+        decirErrorOpcion(seEntrada);
+        registrarFalloMat('sumar-escribir');
+        seEntrada = '';
+        elSePantalla.textContent = '?';
+    }
+}
+
+document.getElementById('btn-se-escuchar').addEventListener('click', () => {
+    if (!seBloqueado && seRonda) hablarSuma(seRonda.a, seRonda.b);
+});
+document.getElementById('btn-se-decir').addEventListener('click', () => {
+    if (seEntrada) hablarNumeroEscrito(seEntrada);
+});
+btnSeSiguiente.addEventListener('click', () => {
+    avanzarDespuesDeAcierto(iniciarSumarEscribir);
+});
+
+// --- Matemática 6: Sumar (elegir) ---
+let selRonda = null;
+let selBloqueado = false;
+let selEntradaKb = '';
+
+const elSelObjA = document.getElementById('sel-objetos-a');
+const elSelObjB = document.getElementById('sel-objetos-b');
+const elSelCantA = document.getElementById('sel-cant-a');
+const elSelCantB = document.getElementById('sel-cant-b');
+const elSelOpciones = document.getElementById('sel-opciones');
+const elSelMensaje = document.getElementById('sel-mensaje');
+const btnSelSiguiente = document.getElementById('btn-sel-siguiente');
+
+function iniciarSumarElegir() {
+    desactivarEntradaNumerica();
+    desactivarTecladoMat();
+    selBloqueado = false;
+    selEntradaKb = '';
+    btnSelSiguiente.classList.add('oculto');
+    elSelMensaje.textContent = '';
+    elSelMensaje.className = 'mensaje-quiz';
+    selRonda = generarRondaSuma('sumar-elegir');
+    montarPanelSuma(selRonda, elSelObjA, elSelCantA, elSelObjB, elSelCantB);
+
+    const maxSuma = getMaxRespuesta('sumar-elegir');
+    const opciones = numerosDistractores(selRonda.suma, 3, 2, maxSuma);
+
+    elSelOpciones.innerHTML = '';
+    opciones.forEach((num) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'opcion-numero';
+        btn.textContent = num;
+        btn.addEventListener('click', () => {
+            sonidoPulsacionNumero(String(num));
+            responderSumarElegir(num, btn);
+        });
+        elSelOpciones.appendChild(btn);
+    });
+
+    activarTecladoMat({
+        onDigitoVincular: (d) => {
+            if (selBloqueado) return;
+            if (selEntradaKb.length >= maxDigitosJuego('sumar-elegir')) return;
+            if (selEntradaKb === '' && d === '0') return;
+            sonidoPulsacionNumero(d);
+            selEntradaKb += d;
+        },
+        onBorrarVincular: () => {
+            selEntradaKb = selEntradaKb.slice(0, -1);
+        },
+        onEnterVincular: () => {
+            const n = parseInt(selEntradaKb, 10);
+            selEntradaKb = '';
+            if (!n) return;
+            const btn = [...elSelOpciones.children].find(
+                (b) => parseInt(b.textContent, 10) === n && !b.disabled
+            );
+            if (btn) responderSumarElegir(n, btn);
+        }
+    });
+}
+
+function responderSumarElegir(num, btn) {
+    if (selBloqueado || !selRonda) return;
+    if (num === selRonda.suma) {
+        selBloqueado = true;
+        desactivarTecladoMat();
+        btn.classList.add('correcta');
+        elSelMensaje.textContent = MSG_BIEN;
+        elSelMensaje.classList.add('ok');
+        hablarNumero(selRonda.suma);
+        registrarAciertoMat('sumar-elegir');
+        elSelOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+        btnSelSiguiente.classList.remove('oculto');
+        registrarEjercicioCompletado();
+        programarAutoSiguiente();
+    } else {
+        btn.classList.add('incorrecta');
+        sonidoIncorrecto();
+        elSelMensaje.textContent = MSG_CASI;
+        elSelMensaje.classList.add('mal');
+        decirErrorOpcion(num);
+        registrarFalloMat('sumar-elegir');
+        btn.disabled = true;
+        setTimeout(() => btn.classList.remove('incorrecta'), 400);
+    }
+}
+
+document.getElementById('btn-sel-escuchar').addEventListener('click', () => {
+    if (!selBloqueado && selRonda) hablarSuma(selRonda.a, selRonda.b);
+});
+btnSelSiguiente.addEventListener('click', () => {
+    avanzarDespuesDeAcierto(iniciarSumarElegir);
+});
+
+// --- Matemática 7: Restar (escribir) ---
+let reRonda = null;
+let reEntrada = '';
+let reBloqueado = false;
+
+const elReVisual = document.getElementById('re-visual');
+const elReTotal = document.getElementById('re-total');
+const elReMenos = document.getElementById('re-menos');
+const elRePantalla = document.getElementById('re-pantalla');
+const elReTeclado = document.getElementById('re-teclado');
+const elReMensaje = document.getElementById('re-mensaje');
+const btnReSiguiente = document.getElementById('btn-re-siguiente');
+
+function actualizarExpresionResta(ronda, respuesta) {
+    elReTotal.textContent = ronda.total;
+    elReMenos.textContent = ronda.resta;
+    elRePantalla.textContent = respuesta === '' || respuesta === undefined ? '?' : respuesta;
+}
+
+function iniciarRestarEscribir() {
+    desactivarEntradaNumerica();
+    desactivarTecladoMat();
+    reBloqueado = false;
+    reEntrada = '';
+    btnReSiguiente.classList.add('oculto');
+    elReMensaje.textContent = '';
+    elReMensaje.className = 'mensaje-quiz';
+    reRonda = generarRondaResta('restar-escribir');
+    montarPanelResta(reRonda, elReVisual);
+    actualizarExpresionResta(reRonda, '');
+
+    activarEntradaNumerica({
+        bloqueado: () => reBloqueado,
+        maxDigitos: () => maxDigitosJuego('restar-escribir'),
+        valor: () => reEntrada,
+        setValor: (v) => { reEntrada = v; },
+        actualizarPantalla: () => {
+            actualizarExpresionResta(reRonda, reEntrada);
+        },
+        onAceptar: verificarRestarEscribir
+    });
+
+    montarTecladoNumerico(elReTeclado, {
+        maxDigitos: maxDigitosJuego('restar-escribir'),
+        onDigito: (d) => digitoEntradaNumerica(d),
+        onBorrar: borrarEntradaNumerica,
+        onAceptar: aceptarEntradaNumerica
+    });
+}
+
+function verificarRestarEscribir() {
+    if (reBloqueado || !reEntrada || !reRonda) return;
+    const respuesta = parseInt(reEntrada, 10);
+    if (respuesta === reRonda.resultado) {
+        reBloqueado = true;
+        desactivarEntradaNumerica();
+        elReMensaje.textContent = MSG_BIEN;
+        elReMensaje.classList.add('ok');
+        actualizarExpresionResta(reRonda, reRonda.resultado);
+        hablarNumero(reRonda.resultado);
+        registrarAciertoMat('restar-escribir');
+        btnReSiguiente.classList.remove('oculto');
+        registrarEjercicioCompletado();
+        programarAutoSiguiente();
+    } else {
+        sonidoIncorrecto();
+        elReMensaje.textContent = MSG_CASI;
+        elReMensaje.classList.add('mal');
+        decirErrorOpcion(reEntrada);
+        registrarFalloMat('restar-escribir');
+        reEntrada = '';
+        actualizarExpresionResta(reRonda, '');
+    }
+}
+
+document.getElementById('btn-re-escuchar').addEventListener('click', () => {
+    if (!reBloqueado && reRonda) hablarResta(reRonda.total, reRonda.resta);
+});
+document.getElementById('btn-re-decir').addEventListener('click', () => {
+    if (reEntrada) hablarNumeroEscrito(reEntrada);
+});
+btnReSiguiente.addEventListener('click', () => {
+    avanzarDespuesDeAcierto(iniciarRestarEscribir);
 });
 
 function juegoAleatorioId() {
@@ -1384,6 +1716,15 @@ function mostrarEjercicioAleatorio() {
     } else if (id === 'elegir-numero') {
         juegoElegirNumero.classList.remove('oculto');
         iniciarElegirNumero();
+    } else if (id === 'sumar-escribir') {
+        juegoSumarEscribir.classList.remove('oculto');
+        iniciarSumarEscribir();
+    } else if (id === 'sumar-elegir') {
+        juegoSumarElegir.classList.remove('oculto');
+        iniciarSumarElegir();
+    } else if (id === 'restar-escribir') {
+        juegoRestarEscribir.classList.remove('oculto');
+        iniciarRestarEscribir();
     }
 }
 
@@ -1391,6 +1732,3 @@ function entrarModoAleatorio() {
     modoAleatorio = true;
     mostrarEjercicioAleatorio();
 }
-
-montarBarrasDificultadJuego();
-actualizarBarrasDificultad();

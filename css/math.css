@@ -141,25 +141,23 @@
     flex-shrink: 0;
 }
 
-.vincular-bloque {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-}
-
-.vincular-contenedor {
+.vincular-layout {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     gap: clamp(8px, 1.5vh, 12px);
     align-items: start;
-    margin-bottom: clamp(6px, 1.2vh, 10px);
-    flex: 1 1 auto;
+    margin-bottom: clamp(4px, 1vh, 8px);
+    flex: 1 1 0;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    overflow: hidden;
+}
+
+.vincular-grupos-area,
+.vincular-numeros-area {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
 }
 
 .vincular-col {
@@ -265,9 +263,18 @@
         margin-bottom: 6px;
     }
 
+    #juego-vincular #vincular-mensaje {
+        margin-bottom: 4px;
+        min-height: 0;
+    }
+
+    #juego-vincular #vincular-mensaje:empty {
+        display: none;
+    }
+
     #juego-vincular .barra-dificultad-juego {
         padding: 8px 10px;
-        margin-top: 4px;
+        margin-top: 0;
     }
 
     #juego-vincular .barra-dificultad-juego .barra-dificultad-titulo {
@@ -275,11 +282,28 @@
         margin-bottom: 6px;
     }
 
-    .vincular-contenedor {
+    .vincular-layout {
         display: flex;
         flex-direction: column;
-        gap: 14px;
-        padding-bottom: 4px;
+        gap: 0;
+        margin-bottom: 6px;
+    }
+
+    .vincular-grupos-area {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        padding-bottom: 6px;
+    }
+
+    .vincular-numeros-area {
+        flex: 0 0 auto;
+        padding-top: 8px;
+        border-top: 3px solid #b3e5fc;
+        background: linear-gradient(to bottom, #e0f7fa 70%, #e0f7fa);
     }
 
     .vincular-sep {
@@ -301,7 +325,7 @@
         grid-template-columns: repeat(auto-fill, minmax(1.5rem, 1fr));
         justify-items: center;
         align-content: center;
-        min-height: clamp(80px, 22vw, 108px);
+        min-height: clamp(72px, 20vw, 96px);
         padding: 12px 14px;
         gap: 6px;
         border-width: 7px;
@@ -310,28 +334,29 @@
 
     #vincular-numeros {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        gap: 8px;
     }
 
     .vincular-numero {
-        font-size: clamp(1.6rem, 8vw, 2.25rem);
-        min-height: clamp(56px, 14vw, 72px);
-        padding: 14px 6px;
-        border-radius: 20px;
-        box-shadow: 0 7px 0 #fbc02d;
+        font-size: clamp(1.5rem, 7.5vw, 2rem);
+        min-height: clamp(52px, 13vw, 64px);
+        padding: 12px 6px;
+        border-radius: 18px;
+        box-shadow: 0 6px 0 #fbc02d;
     }
 
     .vincular-numero.seleccionado {
-        box-shadow: 0 7px 0 #ffca28;
+        box-shadow: 0 6px 0 #ffca28;
     }
 
     .vincular-numero.vinculado {
-        box-shadow: 0 7px 0 #66bb6a;
+        box-shadow: 0 6px 0 #66bb6a;
     }
 }
 
 #juego-contar #contar-teclado,
-#juego-escribir-numero #en-teclado {
+#juego-escribir-numero #en-teclado,
+#juego-sumar-escribir #se-teclado {
     flex: 1 1 0;
     min-height: 0;
     max-height: min(44vh, 300px);
@@ -339,8 +364,18 @@
     align-content: stretch;
 }
 
+#juego-restar-escribir #re-teclado {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: min(52vh, 360px);
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    align-content: stretch;
+}
+
 #juego-contar .tecla-num,
-#juego-escribir-numero .tecla-num {
+#juego-escribir-numero .tecla-num,
+#juego-sumar-escribir .tecla-num,
+#juego-restar-escribir .tecla-num {
     height: 100%;
     display: flex;
     align-items: center;
@@ -381,16 +416,22 @@
 
 .opcion-numero {
     flex: 1 1 0;
-    min-height: 0;
-    padding: clamp(8px, 2vh, 16px);
+    min-height: clamp(52px, 12vh, 72px);
+    min-width: 0;
+    padding: clamp(10px, 2vh, 16px) clamp(8px, 2vw, 14px);
     border: none;
     border-radius: 16px;
     background: #ffeb3b;
     box-shadow: 0 5px 0 #fbc02d;
-    font-size: clamp(1.5rem, min(7vw, 7vh), 2.4rem);
+    font-size: clamp(1.35rem, min(6vw, 6vh), 2.2rem);
     font-weight: 800;
     color: #5d4037;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+    overflow: hidden;
 }
 
 .opcion-numero.correcta {
@@ -403,4 +444,339 @@
     background: #ef9a9a;
     box-shadow: 0 6px 0 #e57373;
     animation: sacudir 0.4s ease;
+}
+
+/* --- Sumas --- */
+.suma-contenedor {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(6px, 2vw, 14px);
+    margin-bottom: clamp(8px, 1.5vh, 12px);
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.suma-grupo {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border: 7px solid #4fc3f7;
+    border-radius: clamp(16px, 3vh, 24px);
+    padding: clamp(8px, 1.5vh, 12px) clamp(6px, 1.5vw, 10px);
+    box-shadow: 0 8px 0 #b3e5fc;
+}
+
+.suma-objetos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(3px, 0.6vh, 5px);
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: clamp(56px, 14vw, 88px);
+    max-height: clamp(72px, 20vh, 120px);
+    overflow: hidden;
+}
+
+.suma-objetos .objeto-item {
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.suma-cantidad {
+    font-size: clamp(1.5rem, min(7vw, 6vh), 2.4rem);
+    font-weight: 800;
+    color: #0288d1;
+    line-height: 1.1;
+    margin-top: clamp(6px, 1.2vh, 10px);
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+}
+
+.suma-op {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2rem, min(10vw, 8vh), 3rem);
+    font-weight: 800;
+    color: #ff9800;
+    flex-shrink: 0;
+    align-self: center;
+    line-height: 1;
+}
+
+#juego-sumar-elegir .opciones-suma {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex: 0 0 auto;
+    max-height: none;
+    gap: clamp(8px, 2.5vw, 12px);
+}
+
+#juego-sumar-elegir .opcion-numero {
+    flex: unset;
+    min-height: clamp(58px, 15vw, 84px);
+    padding: clamp(12px, 2.5vh, 18px) clamp(6px, 1.5vw, 10px);
+    font-size: clamp(1.25rem, 5.5vw, 2rem);
+    border-radius: 18px;
+    box-shadow: 0 6px 0 #fbc02d;
+}
+
+#juego-sumar-elegir .opcion-numero.correcta {
+    box-shadow: 0 6px 0 #66bb6a;
+}
+
+#juego-sumar-elegir .opcion-numero.incorrecta {
+    box-shadow: 0 6px 0 #e57373;
+}
+
+@media (max-width: 520px) {
+    .suma-contenedor {
+        gap: 6px;
+    }
+
+    .suma-grupo {
+        border-width: 6px;
+        padding: 8px 6px;
+        min-width: 0;
+    }
+
+    .suma-objetos {
+        min-height: clamp(52px, 16vw, 76px);
+        max-height: clamp(68px, 22vw, 96px);
+    }
+
+    .suma-cantidad {
+        font-size: clamp(1.35rem, 8vw, 1.9rem);
+    }
+
+    .suma-op {
+        font-size: clamp(1.75rem, 9vw, 2.5rem);
+    }
+
+    #juego-sumar-elegir .opciones-suma {
+        gap: 8px;
+    }
+
+    #juego-sumar-elegir .opcion-numero {
+        min-height: clamp(54px, 14vw, 72px);
+        font-size: clamp(1.15rem, 5vw, 1.75rem);
+        padding: 10px 4px;
+    }
+}
+
+/* --- Restas --- */
+.resta-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: clamp(6px, 1.2vh, 10px);
+    overflow: hidden;
+}
+
+.resta-recuadro-total {
+    position: relative;
+    background: white;
+    border: 5px solid #66bb6a;
+    border-radius: clamp(14px, 2.5vh, 20px);
+    padding: clamp(10px, 2vh, 14px);
+    box-shadow: 0 6px 0 #a5d6a7;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(6px, 1vh, 10px);
+}
+
+.resta-visual-interna {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: clamp(8px, 1.5vw, 12px);
+    width: 100%;
+    align-items: start;
+}
+
+.resta-fuera {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(4px, 0.8vw, 8px);
+    justify-content: flex-start;
+    align-content: flex-start;
+    min-width: 0;
+}
+
+.resta-fuera .objeto-item,
+.resta-marco-menos .objeto-item {
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.resta-marco-menos {
+    border: 4px solid #ef5350;
+    border-radius: clamp(10px, 1.8vh, 14px);
+    background: #fff8f8;
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(4px, 0.8vw, 6px);
+    padding: clamp(6px, 1.2vh, 10px);
+    justify-content: center;
+    align-content: center;
+    align-self: start;
+    min-width: clamp(2.8rem, 12vw, 4rem);
+    min-height: clamp(2.8rem, 12vw, 4rem);
+    box-shadow: 0 3px 0 #ffcdd2;
+}
+
+.resta-expresion-fila {
+    flex-shrink: 0;
+    margin-bottom: clamp(6px, 1.2vh, 10px);
+    width: 100%;
+}
+
+.resta-expresion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2em 0.35em;
+    font-size: clamp(1.5rem, min(7vw, 5.5vh), 2.4rem);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.resta-num-verde {
+    color: #2e7d32;
+}
+
+.resta-num-rojo {
+    color: #c62828;
+}
+
+.resta-op {
+    color: #5d4037;
+}
+
+.resta-respuesta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6em;
+    min-height: 1.4em;
+    padding: 0.05em 0.4em;
+    border: 3px solid #4fc3f7;
+    border-radius: 12px;
+    background: white;
+    color: #0288d1;
+    box-shadow: 0 4px 0 #b3e5fc;
+    line-height: 1.1;
+}
+
+.btn-parlante-resta {
+    flex-shrink: 0;
+    width: clamp(40px, 10vw, 52px);
+    height: clamp(40px, 10vw, 52px);
+    border: none;
+    border-radius: 14px;
+    background: #ffeb3b;
+    box-shadow: 0 4px 0 #fbc02d;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    margin-left: 0.15em;
+}
+
+.btn-parlante-resta:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #fbc02d;
+}
+
+.btn-parlante-resta svg {
+    width: clamp(22px, 6vw, 28px);
+    height: clamp(22px, 6vw, 28px);
+}
+
+#juego-restar-escribir .resta-panel {
+    max-height: min(42vh, 280px);
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+    #juego-restar-escribir {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(210px, 38vw);
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+        column-gap: 10px;
+        align-content: stretch;
+    }
+
+    #juego-restar-escribir > .btn-volver {
+        grid-column: 1;
+    }
+
+    #juego-restar-escribir > .quiz-header {
+        grid-column: 1 / -1;
+    }
+
+    #juego-restar-escribir > .resta-panel {
+        grid-column: 1;
+        grid-row: 3;
+        max-height: none;
+        margin-bottom: 4px;
+    }
+
+    #juego-restar-escribir > .resta-expresion-fila {
+        grid-column: 1;
+        grid-row: 4;
+        margin-bottom: 4px;
+    }
+
+    #juego-restar-escribir > #re-teclado {
+        grid-column: 2;
+        grid-row: 3 / span 3;
+        max-height: none;
+        margin-bottom: 0;
+    }
+
+    #juego-restar-escribir > #re-mensaje {
+        grid-column: 1;
+        grid-row: 5;
+        margin-bottom: 2px;
+    }
+
+    #juego-restar-escribir > .btn-siguiente {
+        grid-column: 1;
+        grid-row: 6;
+    }
+
+    #juego-restar-escribir > .barra-dificultad-juego {
+        grid-column: 1 / -1;
+    }
+
+    #juego-restar-escribir .resta-expresion {
+        font-size: clamp(1.25rem, 4.5vh, 1.75rem);
+    }
+}
+
+@media (max-width: 520px) {
+    .resta-recuadro-total {
+        border-width: 4px;
+        padding: 8px;
+    }
+
+    .resta-marco-menos {
+        border-width: 3px;
+    }
+
+    #juego-restar-escribir .resta-expresion {
+        font-size: clamp(1.25rem, 6.5vw, 1.75rem);
+    }
 }

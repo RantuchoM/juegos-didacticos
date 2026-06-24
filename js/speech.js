@@ -1,4 +1,5 @@
 import { VOZ, MENSAJE_AUDIO, MSG_CASI } from './config.js';
+import { numeroATextoEspanol } from './numeros-es.js';
 
 const synth = window.speechSynthesis;
 let vozEspanola = null;
@@ -217,13 +218,16 @@ export function hablarNumero(n, alTerminar) {
     if (n === undefined || n === null || n === '') return;
     cancelarVoz();
 
-    const key = String(n);
+    const num = typeof n === 'string' ? parseInt(n, 10) : n;
+    if (!Number.isFinite(num)) return;
+
+    const key = String(num);
     if (tieneAudio('numeros', key)) {
         reproducirUrl(urlAudio('numeros', key), alTerminar);
         return;
     }
 
-    hablarTTS(key, alTerminar);
+    hablarTTS(numeroATextoEspanol(num), alTerminar);
 }
 
 export function hablarNumeroEscrito(texto) {

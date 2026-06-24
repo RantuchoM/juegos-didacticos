@@ -53,11 +53,18 @@
                 <span class="emoji-menu">👂</span>
                 Elegir
             </button>
-            <div class="barra-dificultad" data-barra-contar-unir id="barra-dificultad-menu">
-                <div class="barra-dificultad-titulo">Contar / Unir — nivel de números</div>
-                <div class="barra-dificultad-niveles" id="niveles-mat-menu"></div>
-                <div class="barra-dificultad-rango" id="rango-mat-menu"></div>
-            </div>
+            <button class="btn-juego" type="button" data-juego="sumar-escribir">
+                <span class="emoji-menu">➕</span>
+                Sumar
+            </button>
+            <button class="btn-juego" type="button" data-juego="sumar-elegir">
+                <span class="emoji-menu">🎯</span>
+                Suma
+            </button>
+            <button class="btn-juego" type="button" data-juego="restar-escribir">
+                <span class="emoji-menu">➖</span>
+                Restar
+            </button>
         </div>
     </section>
 
@@ -141,27 +148,27 @@
         <div id="contar-teclado" class="teclado-numerico"></div>
         <div id="contar-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-contar-siguiente" class="btn-siguiente oculto">Siguiente →</button>
-        <div class="barra-dificultad barra-dificultad-juego" data-barra-contar-unir></div>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="contar"></div>
     </section>
 
     <!-- Matemática 2: Vincular -->
     <section id="juego-vincular" class="pantalla-juego oculto">
         <button type="button" class="btn-volver" data-volver>← Volver</button>
         <div class="quiz-header"><span class="vincular-titulo">Uní cada grupo con su número</span></div>
-        <div class="vincular-contenedor">
-            <div class="vincular-bloque vincular-bloque-objetos">
+        <div class="vincular-layout">
+            <div class="vincular-grupos-area">
                 <p class="vincular-etiqueta">Grupos</p>
                 <div id="vincular-objetos" class="vincular-col"></div>
             </div>
             <div class="vincular-sep" aria-hidden="true">↔</div>
-            <div class="vincular-bloque vincular-bloque-numeros">
+            <div class="vincular-numeros-area">
                 <p class="vincular-etiqueta">Números</p>
                 <div id="vincular-numeros" class="vincular-col"></div>
             </div>
         </div>
         <div id="vincular-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-vincular-siguiente" class="btn-siguiente oculto">Siguiente →</button>
-        <div class="barra-dificultad barra-dificultad-juego" data-barra-contar-unir></div>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="vincular"></div>
     </section>
 
     <!-- Matemática 3: Escribir número -->
@@ -182,7 +189,7 @@
         <div id="en-teclado" class="teclado-numerico"></div>
         <div id="en-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-en-siguiente" class="btn-siguiente oculto">Siguiente →</button>
-        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat></div>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="escribir-numero"></div>
     </section>
 
     <!-- Matemática 4: Elegir número -->
@@ -195,13 +202,99 @@
         <div id="el-opciones" class="opciones-numeros"></div>
         <div id="el-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-el-siguiente" class="btn-siguiente oculto">Siguiente →</button>
-        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat></div>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="elegir-numero"></div>
+    </section>
+
+    <!-- Matemática 5: Sumar (escribir) -->
+    <section id="juego-sumar-escribir" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span>¿Cuántos suman? · Enter para aceptar</span>
+            <button type="button" class="btn-volver" id="btn-se-escuchar">🔊 Escuchar</button>
+        </div>
+        <div class="suma-contenedor">
+            <div class="suma-grupo">
+                <div id="se-objetos-a" class="suma-objetos"></div>
+                <span id="se-cant-a" class="suma-cantidad"></span>
+            </div>
+            <span class="suma-op" aria-hidden="true">+</span>
+            <div class="suma-grupo">
+                <div id="se-objetos-b" class="suma-objetos"></div>
+                <span id="se-cant-b" class="suma-cantidad"></span>
+            </div>
+        </div>
+        <div class="pantalla-numero-fila">
+            <div class="pantalla-numero">
+                <span id="se-pantalla" class="pantalla-numero-valor">?</span>
+                <button type="button" class="btn-parlante-num" id="btn-se-decir" title="Decir lo escrito">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="se-teclado" class="teclado-numerico"></div>
+        <div id="se-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-se-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="sumar-escribir"></div>
+    </section>
+
+    <!-- Matemática 6: Sumar (elegir) -->
+    <section id="juego-sumar-elegir" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span>¿Cuántos suman?</span>
+            <button type="button" class="btn-volver" id="btn-sel-escuchar">🔊 Escuchar</button>
+        </div>
+        <div class="suma-contenedor">
+            <div class="suma-grupo">
+                <div id="sel-objetos-a" class="suma-objetos"></div>
+                <span id="sel-cant-a" class="suma-cantidad"></span>
+            </div>
+            <span class="suma-op" aria-hidden="true">+</span>
+            <div class="suma-grupo">
+                <div id="sel-objetos-b" class="suma-objetos"></div>
+                <span id="sel-cant-b" class="suma-cantidad"></span>
+            </div>
+        </div>
+        <div id="sel-opciones" class="opciones-numeros opciones-suma"></div>
+        <div id="sel-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-sel-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="sumar-elegir"></div>
+    </section>
+
+    <!-- Matemática 7: Restar (escribir) -->
+    <section id="juego-restar-escribir" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span>¿Cuánto queda? · Enter para aceptar</span>
+            <button type="button" class="btn-volver" id="btn-re-escuchar">🔊 Escuchar</button>
+        </div>
+        <div class="resta-panel">
+            <div class="resta-recuadro-total">
+                <div id="re-visual" class="resta-visual-interna"></div>
+            </div>
+        </div>
+        <div class="resta-expresion-fila" aria-live="polite">
+            <div class="resta-expresion">
+                <span id="re-total" class="resta-num-verde"></span>
+                <span class="resta-op" aria-hidden="true">−</span>
+                <span id="re-menos" class="resta-num-rojo"></span>
+                <span class="resta-op" aria-hidden="true">=</span>
+                <span id="re-pantalla" class="resta-respuesta">?</span>
+                <button type="button" class="btn-parlante-resta" id="btn-re-decir" title="Decir lo escrito">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="re-teclado" class="teclado-numerico"></div>
+        <div id="re-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-re-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="restar-escribir"></div>
     </section>
 
     <div id="celebracion-cinco" class="celebracion-cinco oculto" role="dialog" aria-live="polite">
         <div class="celebracion-cinco-contenido">
             <div id="celebracion-emoji" class="celebracion-emoji"></div>
-            <p id="celebracion-texto" class="celebracion-texto">¡Muy bien, hiciste cinco ejercicios!</p>
+            <p id="celebracion-texto" class="celebracion-texto">¡Muy bien, hiciste 5 ejercicios!</p>
             <button type="button" id="btn-celebracion-continuar" class="btn-celebracion">¡Genial!</button>
         </div>
     </div>

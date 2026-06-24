@@ -116,9 +116,84 @@
     font-weight: 600;
 }
 
+.barra-dificultad-personalizado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.barra-dificultad-personalizado.oculto {
+    display: none;
+}
+
+.barra-custom-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0277bd;
+}
+
+.barra-custom-input {
+    width: 4.5rem;
+    padding: 6px 8px;
+    border: 2px solid #4fc3f7;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.btn-custom-ok {
+    border: none;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #4fc3f7;
+    color: white;
+    box-shadow: 0 3px 0 #0288d1;
+}
+
+.btn-custom-ok:active {
+    transform: translateY(2px);
+}
+
+.btn-nivel-personalizado {
+    background: #fff8e1;
+    color: #f57f17;
+    box-shadow: 0 4px 0 #ffe082;
+}
+
+.btn-nivel-personalizado.activo {
+    background: #ffb300;
+    color: white;
+    box-shadow: 0 4px 0 #ff8f00;
+}
+
 .barra-dificultad-juego {
     margin-top: auto;
     flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+    .barra-dificultad-juego .barra-dificultad-niveles {
+        gap: 6px;
+    }
+
+    .barra-dificultad-juego .btn-nivel-mat {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .barra-dificultad-juego .barra-dificultad-rango {
+        font-size: 0.72rem;
+    }
 }
 
 .btn-volver {
