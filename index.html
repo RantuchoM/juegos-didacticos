@@ -149,9 +149,15 @@
         <button type="button" class="btn-volver" data-volver>← Volver</button>
         <div class="quiz-header"><span class="vincular-titulo">Uní cada grupo con su número</span></div>
         <div class="vincular-contenedor">
-            <div id="vincular-objetos" class="vincular-col"></div>
-            <div class="vincular-sep">↔</div>
-            <div id="vincular-numeros" class="vincular-col"></div>
+            <div class="vincular-bloque vincular-bloque-objetos">
+                <p class="vincular-etiqueta">Grupos</p>
+                <div id="vincular-objetos" class="vincular-col"></div>
+            </div>
+            <div class="vincular-sep" aria-hidden="true">↔</div>
+            <div class="vincular-bloque vincular-bloque-numeros">
+                <p class="vincular-etiqueta">Números</p>
+                <div id="vincular-numeros" class="vincular-col"></div>
+            </div>
         </div>
         <div id="vincular-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-vincular-siguiente" class="btn-siguiente oculto">Siguiente →</button>

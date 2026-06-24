@@ -399,15 +399,15 @@ function tamanioEmojiPorCantidad(cantidad) {
 function tamanioEmojiVincular(cantidad) {
     const movil = window.matchMedia('(max-width: 520px)').matches;
     if (movil) {
-        if (cantidad <= 6) return 'clamp(0.6rem, 3vw, 0.95rem)';
-        if (cantidad <= 10) return 'clamp(0.5rem, 2.5vw, 0.8rem)';
-        if (cantidad <= 15) return 'clamp(0.42rem, 2.1vw, 0.68rem)';
-        return 'clamp(0.36rem, 1.8vw, 0.58rem)';
+        if (cantidad <= 6) return 'clamp(1.15rem, 5.5vw, 1.75rem)';
+        if (cantidad <= 10) return 'clamp(1rem, 4.8vw, 1.45rem)';
+        if (cantidad <= 15) return 'clamp(0.85rem, 4vw, 1.2rem)';
+        return 'clamp(0.72rem, 3.4vw, 1rem)';
     }
-    if (cantidad <= 6) return 'clamp(0.85rem, 3.8vh, 1.6rem)';
-    if (cantidad <= 10) return 'clamp(0.7rem, 3vh, 1.25rem)';
-    if (cantidad <= 15) return 'clamp(0.58rem, 2.5vh, 1rem)';
-    return 'clamp(0.48rem, 2.1vh, 0.85rem)';
+    if (cantidad <= 6) return 'clamp(0.95rem, 4vh, 1.7rem)';
+    if (cantidad <= 10) return 'clamp(0.8rem, 3.4vh, 1.4rem)';
+    if (cantidad <= 15) return 'clamp(0.68rem, 2.8vh, 1.15rem)';
+    return 'clamp(0.55rem, 2.4vh, 0.95rem)';
 }
 
 function renderObjetos(contenedor, emoji, cantidad) {
