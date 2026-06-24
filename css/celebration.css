@@ -1,0 +1,53 @@
+/* --- Celebración cada 5 ejercicios --- */
+.celebracion-cinco {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(2, 136, 209, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.celebracion-cinco-contenido {
+    background: white;
+    border: 10px solid #66bb6a;
+    border-radius: 40px;
+    padding: 32px 28px;
+    text-align: center;
+    box-shadow: 0 20px 0 #a5d6a7;
+    max-width: 420px;
+    width: 100%;
+    animation: pulso 0.6s ease;
+}
+
+.celebracion-emoji {
+    font-size: clamp(4rem, 18vw, 7rem);
+    line-height: 1.1;
+    margin-bottom: 16px;
+}
+
+.celebracion-texto {
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    font-weight: 800;
+    color: #2e7d32;
+    margin: 0 0 20px;
+}
+
+.btn-celebracion {
+    border: none;
+    border-radius: 18px;
+    padding: 14px 28px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: #66bb6a;
+    color: white;
+    box-shadow: 0 6px 0 #43a047;
+    cursor: pointer;
+}
+
+.btn-celebracion:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #43a047;
+}

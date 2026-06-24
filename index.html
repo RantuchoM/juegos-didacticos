@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Teclado Mágico</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/reading.css">
+    <link rel="stylesheet" href="css/math.css">
+    <link rel="stylesheet" href="css/celebration.css">
+</head>
+<body>
+<!-- Menú principal -->
+    <section id="menu" class="pantalla-juego">
+        <h1>¿Qué jugamos?</h1>
+        <div class="menu-botones">
+            <button class="btn-juego btn-juego-aleatorio" type="button" data-juego="aleatorio">
+                <span class="emoji-menu">🎲</span>
+                Aleatorio
+            </button>
+            <p class="menu-seccion">Lectura — de más fácil a más difícil</p>
+            <button class="btn-juego" type="button" data-juego="teclado">
+                <span class="emoji-menu">⌨️</span>
+                Teclado
+            </button>
+            <button class="btn-juego" type="button" data-juego="silabas">
+                <span class="emoji-menu">🧩</span>
+                Sílabas
+            </button>
+            <button class="btn-juego" type="button" data-juego="palabra-imagen">
+                <span class="emoji-menu">📝</span>
+                Palabra
+            </button>
+            <button class="btn-juego" type="button" data-juego="imagen-palabra">
+                <span class="emoji-menu">🖼️</span>
+                Imagen
+            </button>
+            <p class="menu-seccion">Matemática — de más fácil a más difícil</p>
+            <button class="btn-juego" type="button" data-juego="contar">
+                <span class="emoji-menu">🔢</span>
+                Contar
+            </button>
+            <button class="btn-juego" type="button" data-juego="vincular">
+                <span class="emoji-menu">🔗</span>
+                Unir
+            </button>
+            <button class="btn-juego" type="button" data-juego="escribir-numero">
+                <span class="emoji-menu">✏️</span>
+                Escribir
+            </button>
+            <button class="btn-juego" type="button" data-juego="elegir-numero">
+                <span class="emoji-menu">👂</span>
+                Elegir
+            </button>
+            <div class="barra-dificultad" data-barra-contar-unir id="barra-dificultad-menu">
+                <div class="barra-dificultad-titulo">Contar / Unir — nivel de números</div>
+                <div class="barra-dificultad-niveles" id="niveles-mat-menu"></div>
+                <div class="barra-dificultad-rango" id="rango-mat-menu"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Juego 1: Teclado -->
+    <section id="juego-teclado" class="pantalla-juego oculto">
+        <div class="lectura-top">
+            <button type="button" class="btn-volver" data-volver>← Volver</button>
+            <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+        </div>
+        <div id="pantalla"></div>
+        <div class="controles">
+            <button type="button" class="accion btn-repetir" id="btn-repetir" title="Repetir">
+                <svg class="icon-parlante" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+            <button type="button" class="accion btn-borrar" id="btn-borrar">BORRAR</button>
+        </div>
+    </section>
+
+    <!-- Juego 2: Sílabas -->
+    <section id="juego-silabas" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="silabas-header">
+            <span id="silabas-contador">Palabra 1 de 50</span>
+            <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-volver" id="btn-escuchar-pista" title="Escuchar la palabra">🔊 Pista</button>
+            </div>
+        </div>
+        <div id="silabas-imagen" class="silabas-imagen" aria-hidden="true"></div>
+        <div id="zonas-respuesta" class="zonas-respuesta"></div>
+        <div id="mensaje-silabas" class="mensaje-silabas"></div>
+        <div id="pool-silabas" class="pool-silabas"></div>
+        <button type="button" id="btn-siguiente" class="btn-siguiente oculto">Siguiente palabra →</button>
+    </section>
+
+    <!-- Juego 3: Palabra + 3 imágenes -->
+    <section id="juego-palabra-imagen" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span id="pi-contador">Palabra 1 de 50</span>
+            <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-volver" id="btn-pi-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
+            </div>
+        </div>
+        <div id="pi-palabra" class="palabra-grande"></div>
+        <div id="pi-opciones" class="opciones-imagenes"></div>
+        <div id="pi-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-pi-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+    </section>
+
+    <!-- Juego 4: Imagen + 3 palabras -->
+    <section id="juego-imagen-palabra" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span id="ip-contador">Palabra 1 de 50</span>
+            <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-volver" id="btn-ip-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
+            </div>
+        </div>
+        <div id="ip-imagen" class="quiz-imagen-central" aria-hidden="true"></div>
+        <div id="ip-opciones" class="opciones-palabras"></div>
+        <div id="ip-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-ip-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+    </section>
+
+    <!-- Matemática 1: Contar -->
+    <section id="juego-contar" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header"><span>¿Cuántos hay? · Enter para aceptar</span></div>
+        <div id="contar-objetos" class="objetos-grid"></div>
+        <div class="pantalla-numero-fila">
+            <div class="pantalla-numero">
+                <span id="contar-pantalla" class="pantalla-numero-valor">?</span>
+                <button type="button" class="btn-parlante-num" id="btn-contar-decir" title="Decir lo escrito">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="contar-teclado" class="teclado-numerico"></div>
+        <div id="contar-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-contar-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-contar-unir></div>
+    </section>
+
+    <!-- Matemática 2: Vincular -->
+    <section id="juego-vincular" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header"><span>4 imágenes · 6 números (2 sobran) · teclado: número + Enter</span></div>
+        <div class="vincular-contenedor">
+            <div id="vincular-objetos" class="vincular-col"></div>
+            <div class="vincular-sep">↔</div>
+            <div id="vincular-numeros" class="vincular-col"></div>
+        </div>
+        <div id="vincular-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-vincular-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-contar-unir></div>
+    </section>
+
+    <!-- Matemática 3: Escribir número -->
+    <section id="juego-escribir-numero" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span>Escribí el número · Enter para aceptar</span>
+            <button type="button" class="btn-volver" id="btn-en-escuchar">🔊 Escuchar</button>
+        </div>
+        <div class="pantalla-numero-fila">
+            <div class="pantalla-numero">
+                <span id="en-pantalla" class="pantalla-numero-valor">?</span>
+                <button type="button" class="btn-parlante-num" id="btn-en-decir" title="Decir lo escrito">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="en-teclado" class="teclado-numerico"></div>
+        <div id="en-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-en-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat></div>
+    </section>
+
+    <!-- Matemática 4: Elegir número -->
+    <section id="juego-elegir-numero" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span>¿Qué número escuchás? · escribir + Enter</span>
+            <button type="button" class="btn-volver" id="btn-el-escuchar">🔊 Escuchar</button>
+        </div>
+        <div id="el-opciones" class="opciones-numeros"></div>
+        <div id="el-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-el-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+        <div class="barra-dificultad barra-dificultad-juego" data-barra-mat></div>
+    </section>
+
+    <div id="celebracion-cinco" class="celebracion-cinco oculto" role="dialog" aria-live="polite">
+        <div class="celebracion-cinco-contenido">
+            <div id="celebracion-emoji" class="celebracion-emoji"></div>
+            <p id="celebracion-texto" class="celebracion-texto">¡Muy bien, hiciste cinco ejercicios!</p>
+            <button type="button" id="btn-celebracion-continuar" class="btn-celebracion">¡Genial!</button>
+        </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+/* --- Menú --- */
+.menu-botones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(6px, 1.2vh, 10px);
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: start;
+}
+
+@media (max-width: 480px) {
+    .menu-botones { grid-template-columns: repeat(2, 1fr); }
+}
+
+.btn-juego {
+    padding: clamp(6px, 1.2vh, 12px) 6px;
+    font-size: clamp(0.65rem, 2.2vw, 0.85rem);
+    font-weight: 700;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    color: #0288d1;
+    background: white;
+    border: 4px solid #4fc3f7;
+    box-shadow: 0 6px 0 #b3e5fc;
+    transition: transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(52px, 11vh, 80px);
+}
+
+.btn-juego:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 #b3e5fc;
+}
+
+.btn-juego .emoji-menu { font-size: clamp(1.4rem, 5vh, 2rem); display: block; margin-bottom: 4px; line-height: 1; }
+
+.btn-juego-aleatorio {
+    grid-column: 1 / -1;
+    background: #fff9c4;
+    border-color: #ffca28;
+    box-shadow: 0 6px 0 #ffb300;
+    color: #e65100;
+    min-height: clamp(56px, 12vh, 72px);
+}
+
+.btn-juego-aleatorio:active {
+    box-shadow: 0 3px 0 #ffb300;
+}
+
+.menu-seccion {
+    grid-column: 1 / -1;
+    color: #0277bd;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+.barra-dificultad {
+    grid-column: 1 / -1;
+    background: white;
+    border: 4px solid #4fc3f7;
+    border-radius: 16px;
+    padding: clamp(8px, 1.5vh, 12px) 12px;
+    box-shadow: 0 6px 0 #b3e5fc;
+    margin-top: 2px;
+}
+
+.barra-dificultad-titulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0277bd;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.barra-dificultad-niveles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.btn-nivel-mat {
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #e1f5fe;
+    color: #0277bd;
+    box-shadow: 0 4px 0 #b3e5fc;
+}
+
+.btn-nivel-mat.activo {
+    background: #4fc3f7;
+    color: white;
+    box-shadow: 0 4px 0 #0288d1;
+}
+
+.btn-nivel-mat:active {
+    transform: translateY(2px);
+}
+
+.barra-dificultad-rango {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #546e7a;
+    font-weight: 600;
+}
+
+.barra-dificultad-juego {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.btn-volver {
+    align-self: flex-start;
+    margin-bottom: clamp(4px, 1vh, 8px);
+    padding: clamp(6px, 1.2vh, 10px) 14px;
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
+    border: none;
+    border-radius: 12px;
+    background: #b3e5fc;
+    color: #0277bd;
+    cursor: pointer;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.lectura-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: clamp(4px, 1vh, 8px);
+    flex-shrink: 0;
+}
+
+.lectura-top .btn-volver {
+    margin-bottom: 0;
+}
+
+.lectura-header-acciones {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-toggle-mayus {
+    min-width: 48px;
+    height: 48px;
+    padding: 0 12px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    border: none;
+    border-radius: 12px;
+    background: #ffeb3b;
+    box-shadow: 0 4px 0 #fbc02d;
+    color: #5d4037;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
+}
+
+.btn-toggle-mayus:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #fbc02d;
+}
+
+body.modo-mayusculas #pantalla,
+body.modo-mayusculas .slot-silaba,
+body.modo-mayusculas .ficha-silaba,
+body.modo-mayusculas .palabra-grande,
+body.modo-mayusculas .opcion-palabra,
+body.modo-mayusculas .silaba-click {
+    text-transform: uppercase;
+}
+
+body.modo-minusculas #pantalla,
+body.modo-minusculas .slot-silaba,
+body.modo-minusculas .ficha-silaba,
+body.modo-minusculas .palabra-grande,
+body.modo-minusculas .opcion-palabra,
+body.modo-minusculas .silaba-click {
+    text-transform: lowercase;
+}
