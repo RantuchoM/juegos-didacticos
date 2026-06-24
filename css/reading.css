@@ -1,5 +1,5 @@
 /* --- Teclado --- */
-#pantalla {
+#pantalla.pantalla-teclado {
     font-size: clamp(36px, min(16vw, 14vh), 120px);
     width: 100%;
     flex: 1 1 0;
@@ -8,14 +8,28 @@
     border: 8px solid #4fc3f7;
     border-radius: clamp(20px, 4vh, 36px);
     background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     margin-bottom: clamp(6px, 1.5vh, 12px);
     color: #0288d1;
     box-shadow: 0 10px 0 #b3e5fc;
     padding: clamp(8px, 2vh, 16px);
     word-break: break-all;
+    font-family: inherit;
+    font-weight: 800;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#pantalla.pantalla-teclado:focus {
+    border-color: #0288d1;
+    box-shadow: 0 10px 0 #b3e5fc, 0 0 0 3px rgba(79, 195, 247, 0.35);
+}
+
+#pantalla.pantalla-teclado::placeholder {
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    font-weight: 600;
+    color: #81d4fa;
+    opacity: 1;
 }
 
 .controles {
@@ -285,7 +299,6 @@ button.accion:active {
 .silaba-sep {
     color: #4fc3f7;
     font-weight: 800;
-    user-select: none;
     padding: 0;
     margin: 0 -0.06em;
     line-height: 1;

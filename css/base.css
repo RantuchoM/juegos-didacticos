@@ -3,6 +3,32 @@
 html {
     height: 100%;
     overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Evitar que al mantener pulsado en táctil se seleccione el texto del botón */
+button,
+input.pantalla-teclado,
+.pantalla-juego,
+.pantalla-juego *,
+.celebracion-cinco,
+.celebracion-cinco * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+button,
+.vincular-objetos,
+.ficha-silaba,
+.slot-silaba,
+.tecla-num,
+.opcion-imagen,
+.opcion-palabra,
+.opcion-numero,
+.vincular-numero {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {

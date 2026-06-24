@@ -27,3 +27,17 @@ export const IDS_SIGUIENTE = [
     'btn-en-siguiente', 'btn-el-siguiente'
 ];
 export const AUTO_SIGUIENTE_MS = 2200;
+
+export const VOZ = {
+    carpeta: 'audio/latino',
+    formato: 'mp3',
+    usarPersonalizada: true,
+    preferirLatinoTTS: true,
+    idiomaTTS: 'es-MX'
+};
+
+export const MENSAJE_AUDIO = {
+    [MSG_CASI]: 'casi',
+    [MSG_BIEN]: 'muy-bien',
+    [MSG_CINCO_EJERCICIOS]: 'cinco-ejercicios'
+};

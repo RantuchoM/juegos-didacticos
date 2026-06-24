@@ -5,91 +5,10 @@ import {
     NIVELES_CONTAR_UNIR, NIVELES_MAT, MIN_SILABAS_JUEGO,
     JUEGOS_ALEATORIOS, IDS_SIGUIENTE, AUTO_SIGUIENTE_MS
 } from './config.js';
-
-﻿const synth = window.speechSynthesis;
-let vozEspanola = null;
-
-function cargarVoces() {
-    const voces = synth.getVoices();
-    const es = (v) => v.lang.toLowerCase().startsWith('es');
-    vozEspanola =
-        voces.find((v) => es(v) && v.localService && /sabina|helena|pablo/i.test(v.name)) ||
-        voces.find((v) => es(v) && v.localService) ||
-        voces.find((v) => es(v) && v.lang.toLowerCase() === 'es-es') ||
-        voces.find(es) ||
-        null;
-}
-
-synth.onvoiceschanged = cargarVoces;
-cargarVoces();
-
-function hablar(texto, alTerminar) {
-    if (!texto) return;
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-ES';
-    if (vozEspanola) {
-        utterance.voice = vozEspanola;
-        utterance.lang = vozEspanola.lang;
-    }
-    utterance.rate = 0.85;
-    utterance.pitch = 1.1;
-    if (alTerminar) utterance.onend = alTerminar;
-    synth.speak(utterance);
-}
-
-function silabaParaVoz(texto) {
-    const t = texto.trim();
-    if (!t) return t;
-    return t.charAt(0).toLocaleUpperCase('es') + t.slice(1).toLocaleLowerCase('es');
-}
-
-function hablarSilaba(texto, alTerminar) {
-    if (!texto) return;
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
-    utterance.lang = 'es-ES';
-    if (vozEspanola) {
-        utterance.voice = vozEspanola;
-        utterance.lang = vozEspanola.lang;
-    }
-    utterance.rate = 0.78;
-    utterance.pitch = 1.05;
-    if (alTerminar) utterance.onend = alTerminar;
-    synth.speak(utterance);
-}
-
-const NOMBRES_LETRAS = {
-    a: 'a', b: 'be', c: 'ce', d: 'de', e: 'e', f: 'efe', g: 'ge', h: 'hache',
-    i: 'i', j: 'jota', k: 'ka', l: 'ele', m: 'eme', n: 'ene', ñ: 'eñe', o: 'o',
-    p: 'pe', q: 'cu', r: 'erre', s: 'ese', t: 'te', u: 'u', v: 'uve', w: 'doble uve',
-    x: 'equis', y: 'i griega', z: 'zeta', ' ': 'espacio'
-};
-
-function normalizarLetra(c) {
-    return c.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-}
-
-function cadenaEnEspanol(texto) {
-    return texto
-        .split('')
-        .map((c) => NOMBRES_LETRAS[normalizarLetra(c)] || NOMBRES_LETRAS[c.toLowerCase()])
-        .filter(Boolean)
-        .join(' ');
-}
-
-function hablarCadena(texto) {
-    hablar(cadenaEnEspanol(texto));
-}
-
-
-function decirErrorOpcion(valorOpcion) {
-    if (valorOpcion !== undefined && valorOpcion !== null && String(valorOpcion) !== '') {
-        hablar(String(valorOpcion));
-    } else {
-        hablar(MSG_CASI);
-    }
-}
+import {
+    hablar, hablarSilaba, hablarCadena, hablarNumero, hablarNumeroEscrito,
+    decirErrorOpcion, cancelarVoz
+} from './speech.js';
 
 let ejerciciosCompletados = 0;
 let celebracionAbierta = false;
@@ -199,15 +118,6 @@ function sonidoIncorrecto() {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
     osc.start();
     osc.stop(ctx.currentTime + 0.35);
-}
-
-function hablarNumero(n, alTerminar) {
-    hablar(String(n), alTerminar);
-}
-
-function hablarNumeroEscrito(texto) {
-    if (!texto) return;
-    hablarNumero(parseInt(texto, 10));
 }
 
 function numeroAleatorio(min, max) {
@@ -486,6 +396,20 @@ function tamanioEmojiPorCantidad(cantidad) {
     return 'clamp(0.55rem, 2.5vh, 1rem)';
 }
 
+function tamanioEmojiVincular(cantidad) {
+    const movil = window.matchMedia('(max-width: 520px)').matches;
+    if (movil) {
+        if (cantidad <= 6) return 'clamp(0.6rem, 3vw, 0.95rem)';
+        if (cantidad <= 10) return 'clamp(0.5rem, 2.5vw, 0.8rem)';
+        if (cantidad <= 15) return 'clamp(0.42rem, 2.1vw, 0.68rem)';
+        return 'clamp(0.36rem, 1.8vw, 0.58rem)';
+    }
+    if (cantidad <= 6) return 'clamp(0.85rem, 3.8vh, 1.6rem)';
+    if (cantidad <= 10) return 'clamp(0.7rem, 3vh, 1.25rem)';
+    if (cantidad <= 15) return 'clamp(0.58rem, 2.5vh, 1rem)';
+    return 'clamp(0.48rem, 2.1vh, 0.85rem)';
+}
+
 function renderObjetos(contenedor, emoji, cantidad) {
     contenedor.innerHTML = '';
     const fz = tamanioEmojiPorCantidad(cantidad);
@@ -541,7 +465,10 @@ function mostrarJuego(id) {
     desactivarTecladoMat();
     menu.classList.add('oculto');
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
-    if (id === 'teclado') juegoTeclado.classList.remove('oculto');
+    if (id === 'teclado') {
+        juegoTeclado.classList.remove('oculto');
+        requestAnimationFrame(() => pantalla.focus());
+    }
     if (id === 'silabas') {
         juegoSilabas.classList.remove('oculto');
         iniciarSilabas();
@@ -575,14 +502,15 @@ function mostrarJuego(id) {
 function volverMenu() {
     cancelarAutoSiguiente();
     modoAleatorio = false;
-    synth.cancel();
+    cancelarVoz();
     cerrarCelebracion();
     desactivarEntradaNumerica();
     desactivarTecladoMat();
     menu.classList.remove('oculto');
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
     textoActual = '';
-    pantalla.innerText = '';
+    pantalla.value = '';
+    pantalla.blur();
 }
 
 document.querySelectorAll('[data-juego]').forEach((btn) => {
@@ -602,28 +530,47 @@ document.querySelectorAll('[data-volver]').forEach((btn) => {
 const pantalla = document.getElementById('pantalla');
 let textoActual = '';
 
+function filtrarTextoTeclado(texto) {
+    return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
+}
+
+function actualizarTecladoDesdeInput() {
+    const filtrado = filtrarTextoTeclado(pantalla.value);
+    if (filtrado !== pantalla.value) pantalla.value = filtrado;
+    textoActual = filtrado;
+    if (textoActual) hablarCadena(textoActual);
+}
+
 document.getElementById('btn-repetir').addEventListener('click', () => hablarCadena(textoActual));
 document.getElementById('btn-borrar').addEventListener('click', () => {
     textoActual = '';
-    pantalla.innerText = '';
-    synth.cancel();
+    pantalla.value = '';
+    cancelarVoz();
+    pantalla.focus();
 });
+
+pantalla.addEventListener('input', actualizarTecladoDesdeInput);
+pantalla.addEventListener('click', () => pantalla.focus());
 
 document.addEventListener('keydown', (event) => {
     const tecla = event.key;
 
-    if (!juegoTeclado.classList.contains('oculto')) {
+    if (!juegoTeclado.classList.contains('oculto') && document.activeElement !== pantalla) {
         if (tecla.length === 1 && tecla.match(/[a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/i)) {
             textoActual += tecla;
-            pantalla.innerText = textoActual;
+            pantalla.value = textoActual;
             hablarCadena(textoActual);
+            event.preventDefault();
         } else if (tecla === 'Backspace') {
             textoActual = textoActual.slice(0, -1);
-            pantalla.innerText = textoActual;
+            pantalla.value = textoActual;
             if (textoActual !== '') hablarCadena(textoActual);
+            event.preventDefault();
         }
         return;
     }
+
+    if (!juegoTeclado.classList.contains('oculto')) return;
 
     if (tecla === 'Enter') {
         if (celebracionAbierta) {
@@ -1128,7 +1075,7 @@ function iniciarVincular() {
         for (let j = 0; j < dato.cantidad; j++) {
             const s = document.createElement('span');
             s.className = 'objeto-item';
-            s.style.fontSize = tamanioEmojiPorCantidad(dato.cantidad);
+            s.style.fontSize = tamanioEmojiVincular(dato.cantidad);
             s.textContent = dato.emoji;
             panel.appendChild(s);
         }

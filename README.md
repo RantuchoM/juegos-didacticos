@@ -26,10 +26,13 @@ Juegos didácticos de lectura y matemática para niños. Sitio estático listo p
 │   └── celebration.css     # Modal de celebración
 ├── js/
 │   ├── main.js             # Punto de entrada (ES modules)
+│   ├── speech.js           # Voz personalizada + TTS latino
 │   ├── app.js              # Lógica de juegos y navegación
-│   ├── config.js           # Constantes, niveles, mensajes
+│   ├── config.js           # Constantes, niveles, mensajes, voz
 │   └── data/
 │       └── palabras.js     # Vocabulario (palabras, sílabas, emojis)
+├── audio/
+│   └── latino/             # Audios de voz personalizada (ver abajo)
 └── .nojekyll
 ```
 
@@ -89,3 +92,35 @@ Luego abre `http://localhost:3000` (o el puerto que indique el servidor).
 | Matemática| Elegir   | Elegir el número escuchado           |
 
 Modo **Aleatorio** mezcla ejercicios de todos los juegos (excepto Teclado).
+
+## Voz personalizada en latino
+
+En GitHub Pages no se puede instalar una voz nueva en el navegador. Lo que sí podés hacer es **subir tus propios audios** (MP3, OGG…) y el juego los usará en lugar del sintetizador cuando existan.
+
+### Carpetas
+
+Coloca los archivos en `audio/latino/`:
+
+| Carpeta     | Ejemplo de archivo   | Se usa para                          |
+|------------|----------------------|--------------------------------------|
+| `mensajes/` | `casi.mp3`          | «¡Casi!», «¡Muy bien!», etc.         |
+| `letras/`   | `be.mp3`, `eñe.mp3` | Juego Teclado (deletrear)            |
+| `numeros/`  | `7.mp3`, `42.mp3`   | Juegos de matemática                 |
+| `palabras/` | `pelota.mp3`        | Palabras completas                   |
+| `silabas/`  | `pe.mp3`, `llo.mp3` | Juego Sílabas                        |
+
+Los nombres van en **minúsculas, sin tildes** (`manzana`, no `Manzana`).
+
+### Pasos
+
+1. Grabá los audios (celular, Audacity, etc.) en español latino.
+2. Guardalos en la carpeta que corresponda.
+3. Regenerá el índice de archivos:
+   ```bash
+   node scripts/generar-manifest-voz.mjs
+   ```
+4. Subí los cambios a GitHub (`git add . && git commit && git push`).
+
+Si falta un audio, el juego usa la **voz del sistema en español latino** (configurable en `js/config.js` → `VOZ.idiomaTTS`, por ejemplo `es-MX` o `es-AR`).
+
+Para desactivar los audios propios y usar solo el navegador: `VOZ.usarPersonalizada = false`.

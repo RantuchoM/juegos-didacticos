@@ -67,7 +67,7 @@
             <button type="button" class="btn-volver" data-volver>← Volver</button>
             <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
         </div>
-        <div id="pantalla"></div>
+        <input type="text" id="pantalla" class="pantalla-teclado" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Toca para escribir" aria-label="Escribe letras aquí">
         <div class="controles">
             <button type="button" class="accion btn-repetir" id="btn-repetir" title="Repetir">
                 <svg class="icon-parlante" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
@@ -147,7 +147,7 @@
     <!-- Matemática 2: Vincular -->
     <section id="juego-vincular" class="pantalla-juego oculto">
         <button type="button" class="btn-volver" data-volver>← Volver</button>
-        <div class="quiz-header"><span>4 imágenes · 6 números (2 sobran) · teclado: número + Enter</span></div>
+        <div class="quiz-header"><span class="vincular-titulo">Uní cada grupo con su número</span></div>
         <div class="vincular-contenedor">
             <div id="vincular-objetos" class="vincular-col"></div>
             <div class="vincular-sep">↔</div>
