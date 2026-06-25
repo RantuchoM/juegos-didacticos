@@ -1112,6 +1112,99 @@ const elVincularNumeros = document.getElementById('vincular-numeros');
 const elVincularMensaje = document.getElementById('vincular-mensaje');
 const btnVincularSiguiente = document.getElementById('btn-vincular-siguiente');
 
+function agregarActivacionVincular(el, onActivar) {
+    const UMBRAL_TOQUE_PX = 12;
+    let inicio = null;
+    let ignorarClickHasta = 0;
+
+    const distanciaDesdeInicio = (event) => {
+        if (!inicio) return 0;
+        return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
+    };
+
+    const iniciar = (event) => {
+        if (event.pointerType === 'mouse') return;
+        inicio = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            movido: false
+        };
+        if (el.setPointerCapture) {
+            try {
+                el.setPointerCapture(event.pointerId);
+            } catch (_) {
+                // El navegador puede cancelar la captura si ya empezó un scroll.
+            }
+        }
+    };
+
+    const mover = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        if (distanciaDesdeInicio(event) > UMBRAL_TOQUE_PX) inicio.movido = true;
+    };
+
+    const cancelar = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        ignorarClickHasta = Date.now() + 450;
+        inicio = null;
+    };
+
+    const terminar = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        const fueToque = !inicio.movido && distanciaDesdeInicio(event) <= UMBRAL_TOQUE_PX;
+        inicio = null;
+        ignorarClickHasta = Date.now() + 450;
+        if (!fueToque) return;
+        event.preventDefault();
+        onActivar();
+    };
+
+    if (window.PointerEvent) {
+        el.addEventListener('pointerdown', iniciar);
+        el.addEventListener('pointermove', mover);
+        el.addEventListener('pointercancel', cancelar);
+        el.addEventListener('pointerup', terminar);
+    } else {
+        el.addEventListener('touchstart', (event) => {
+            const toque = event.changedTouches[0];
+            inicio = toque ? { id: toque.identifier, x: toque.clientX, y: toque.clientY, movido: false } : null;
+        }, { passive: true });
+        el.addEventListener('touchmove', (event) => {
+            if (!inicio) return;
+            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
+            if (!toque) return;
+            if (Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) > UMBRAL_TOQUE_PX) {
+                inicio.movido = true;
+            }
+        }, { passive: true });
+        el.addEventListener('touchcancel', () => {
+            ignorarClickHasta = Date.now() + 450;
+            inicio = null;
+        });
+        el.addEventListener('touchend', (event) => {
+            if (!inicio) return;
+            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
+            if (!toque) return;
+            const fueToque = !inicio.movido
+                && Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) <= UMBRAL_TOQUE_PX;
+            inicio = null;
+            ignorarClickHasta = Date.now() + 450;
+            if (!fueToque) return;
+            event.preventDefault();
+            onActivar();
+        });
+    }
+
+    el.addEventListener('click', (event) => {
+        if (Date.now() < ignorarClickHasta) {
+            event.preventDefault();
+            return;
+        }
+        onActivar();
+    });
+}
+
 function iniciarVincular() {
     desactivarEntradaNumerica();
     desactivarTecladoMat();
@@ -1144,7 +1237,7 @@ function iniciarVincular() {
             s.textContent = dato.emoji;
             panel.appendChild(s);
         }
-        panel.addEventListener('click', () => seleccionarObjeto(i, panel));
+        agregarActivacionVincular(panel, () => seleccionarObjeto(i, panel));
         elVincularObjetos.appendChild(panel);
     });
 
@@ -1155,7 +1248,7 @@ function iniciarVincular() {
         btn.className = 'vincular-numero';
         btn.textContent = num;
         btn.dataset.idx = j;
-        btn.addEventListener('click', () => {
+        agregarActivacionVincular(btn, () => {
             sonidoPulsacionNumero(String(num));
             seleccionarNumero(j, btn);
         });
@@ -1229,7 +1322,7 @@ function intentarVincular() {
             desactivarTecladoMat();
             elVincularMensaje.textContent = MSG_BIEN;
             elVincularMensaje.classList.add('ok');
-                    registrarAciertoMat('vincular');
+            registrarAciertoMat('vincular');
             btnVincularSiguiente.classList.remove('oculto');
             registrarEjercicioCompletado();
             programarAutoSiguiente();
