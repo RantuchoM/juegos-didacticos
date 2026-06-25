@@ -190,6 +190,98 @@ function sonidoIncorrecto() {
     osc.stop(ctx.currentTime + 0.35);
 }
 
+/** Toque fiable en táctil: distingue tap de scroll y evita doble disparo. */
+function agregarActivacionTactil(el, onActivar) {
+    const UMBRAL_TOQUE_PX = 12;
+    let inicio = null;
+    let ignorarClickHasta = 0;
+
+    const distanciaDesdeInicio = (event) => {
+        if (!inicio) return 0;
+        return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
+    };
+
+    const iniciar = (event) => {
+        if (event.pointerType === 'mouse') return;
+        inicio = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            movido: false
+        };
+    };
+
+    const mover = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        if (distanciaDesdeInicio(event) > UMBRAL_TOQUE_PX) inicio.movido = true;
+    };
+
+    const cancelar = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        ignorarClickHasta = Date.now() + 450;
+        inicio = null;
+    };
+
+    const terminar = (event) => {
+        if (!inicio || event.pointerId !== inicio.id) return;
+        const fueToque = !inicio.movido && distanciaDesdeInicio(event) <= UMBRAL_TOQUE_PX;
+        inicio = null;
+        ignorarClickHasta = Date.now() + 450;
+        if (!fueToque) return;
+        event.preventDefault();
+        onActivar(event);
+    };
+
+    if (window.PointerEvent) {
+        el.addEventListener('pointerdown', iniciar);
+        el.addEventListener('pointermove', mover);
+        el.addEventListener('pointercancel', cancelar);
+        el.addEventListener('pointerup', terminar);
+    } else {
+        el.addEventListener('touchstart', (event) => {
+            const toque = event.changedTouches[0];
+            inicio = toque ? { id: toque.identifier, x: toque.clientX, y: toque.clientY, movido: false } : null;
+        }, { passive: true });
+        el.addEventListener('touchmove', (event) => {
+            if (!inicio) return;
+            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
+            if (!toque) return;
+            if (Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) > UMBRAL_TOQUE_PX) {
+                inicio.movido = true;
+            }
+        }, { passive: true });
+        el.addEventListener('touchcancel', () => {
+            ignorarClickHasta = Date.now() + 450;
+            inicio = null;
+        });
+        el.addEventListener('touchend', (event) => {
+            if (!inicio) return;
+            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
+            if (!toque) return;
+            const fueToque = !inicio.movido
+                && Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) <= UMBRAL_TOQUE_PX;
+            inicio = null;
+            ignorarClickHasta = Date.now() + 450;
+            if (!fueToque) return;
+            event.preventDefault();
+            onActivar(event);
+        });
+    }
+
+    el.addEventListener('click', (event) => {
+        if (Date.now() < ignorarClickHasta) {
+            event.preventDefault();
+            return;
+        }
+        onActivar(event);
+    });
+}
+
+function enlazarTactil(elOrId, onActivar) {
+    const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (el) agregarActivacionTactil(el, onActivar);
+}
+
 function numeroAleatorio(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -594,7 +686,7 @@ function actualizarTecladoDesdeInput() {
     if (textoActual) hablarCadena(textoActual);
 }
 
-document.getElementById('btn-repetir').addEventListener('click', () => hablarCadena(textoActual));
+enlazarTactil('btn-repetir', () => hablarCadena(textoActual));
 document.getElementById('btn-borrar').addEventListener('click', () => {
     textoActual = '';
     pantalla.value = '';
@@ -828,7 +920,7 @@ btnSiguiente.addEventListener('click', () => {
     });
 });
 
-document.getElementById('btn-escuchar-pista').addEventListener('click', () => {
+enlazarTactil('btn-escuchar-pista', () => {
     if (palabraActual) hablar(palabraActual.palabra);
 });
 
@@ -870,8 +962,8 @@ function renderPalabraConSilabas(contenedor, item) {
         btn.className = 'silaba-click';
         btn.textContent = silaba;
         btn.title = `Escuchar «${silaba}»`;
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
+        agregarActivacionTactil(btn, (e) => {
+            e?.stopPropagation?.();
             hablarSilaba(silaba);
         });
         wrap.appendChild(btn);
@@ -932,7 +1024,7 @@ btnPISiguiente.addEventListener('click', () => {
     });
 });
 
-document.getElementById('btn-pi-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-pi-escuchar', () => {
     if (correctoPI !== null) hablar(PALABRAS[correctoPI].palabra);
 });
 
@@ -1008,7 +1100,7 @@ btnIPSiguiente.addEventListener('click', () => {
     });
 });
 
-document.getElementById('btn-ip-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-ip-escuchar', () => {
     if (correctoIP !== null) hablar(PALABRAS[correctoIP].palabra);
 });
 
@@ -1083,7 +1175,7 @@ function verificarContar() {
 btnContarSiguiente.addEventListener('click', () => {
     avanzarDespuesDeAcierto(iniciarContar);
 });
-document.getElementById('btn-contar-decir').addEventListener('click', () => {
+enlazarTactil('btn-contar-decir', () => {
     if (contarEntrada) hablarNumeroEscrito(contarEntrada);
 });
 
@@ -1101,99 +1193,6 @@ const elVincularObjetos = document.getElementById('vincular-objetos');
 const elVincularNumeros = document.getElementById('vincular-numeros');
 const elVincularMensaje = document.getElementById('vincular-mensaje');
 const btnVincularSiguiente = document.getElementById('btn-vincular-siguiente');
-
-function agregarActivacionVincular(el, onActivar) {
-    const UMBRAL_TOQUE_PX = 12;
-    let inicio = null;
-    let ignorarClickHasta = 0;
-
-    const distanciaDesdeInicio = (event) => {
-        if (!inicio) return 0;
-        return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
-    };
-
-    const iniciar = (event) => {
-        if (event.pointerType === 'mouse') return;
-        inicio = {
-            id: event.pointerId,
-            x: event.clientX,
-            y: event.clientY,
-            movido: false
-        };
-        if (el.setPointerCapture) {
-            try {
-                el.setPointerCapture(event.pointerId);
-            } catch (_) {
-                // El navegador puede cancelar la captura si ya empezó un scroll.
-            }
-        }
-    };
-
-    const mover = (event) => {
-        if (!inicio || event.pointerId !== inicio.id) return;
-        if (distanciaDesdeInicio(event) > UMBRAL_TOQUE_PX) inicio.movido = true;
-    };
-
-    const cancelar = (event) => {
-        if (!inicio || event.pointerId !== inicio.id) return;
-        ignorarClickHasta = Date.now() + 450;
-        inicio = null;
-    };
-
-    const terminar = (event) => {
-        if (!inicio || event.pointerId !== inicio.id) return;
-        const fueToque = !inicio.movido && distanciaDesdeInicio(event) <= UMBRAL_TOQUE_PX;
-        inicio = null;
-        ignorarClickHasta = Date.now() + 450;
-        if (!fueToque) return;
-        event.preventDefault();
-        onActivar();
-    };
-
-    if (window.PointerEvent) {
-        el.addEventListener('pointerdown', iniciar);
-        el.addEventListener('pointermove', mover);
-        el.addEventListener('pointercancel', cancelar);
-        el.addEventListener('pointerup', terminar);
-    } else {
-        el.addEventListener('touchstart', (event) => {
-            const toque = event.changedTouches[0];
-            inicio = toque ? { id: toque.identifier, x: toque.clientX, y: toque.clientY, movido: false } : null;
-        }, { passive: true });
-        el.addEventListener('touchmove', (event) => {
-            if (!inicio) return;
-            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
-            if (!toque) return;
-            if (Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) > UMBRAL_TOQUE_PX) {
-                inicio.movido = true;
-            }
-        }, { passive: true });
-        el.addEventListener('touchcancel', () => {
-            ignorarClickHasta = Date.now() + 450;
-            inicio = null;
-        });
-        el.addEventListener('touchend', (event) => {
-            if (!inicio) return;
-            const toque = Array.from(event.changedTouches).find((t) => t.identifier === inicio.id);
-            if (!toque) return;
-            const fueToque = !inicio.movido
-                && Math.hypot(toque.clientX - inicio.x, toque.clientY - inicio.y) <= UMBRAL_TOQUE_PX;
-            inicio = null;
-            ignorarClickHasta = Date.now() + 450;
-            if (!fueToque) return;
-            event.preventDefault();
-            onActivar();
-        });
-    }
-
-    el.addEventListener('click', (event) => {
-        if (Date.now() < ignorarClickHasta) {
-            event.preventDefault();
-            return;
-        }
-        onActivar();
-    });
-}
 
 function iniciarVincular() {
     desactivarEntradaNumerica();
@@ -1227,7 +1226,7 @@ function iniciarVincular() {
             s.textContent = dato.emoji;
             panel.appendChild(s);
         }
-        agregarActivacionVincular(panel, () => seleccionarObjeto(i, panel));
+        agregarActivacionTactil(panel, () => seleccionarObjeto(i, panel));
         elVincularObjetos.appendChild(panel);
     });
 
@@ -1238,7 +1237,7 @@ function iniciarVincular() {
         btn.className = 'vincular-numero';
         btn.textContent = num;
         btn.dataset.idx = j;
-        agregarActivacionVincular(btn, () => {
+        agregarActivacionTactil(btn, () => {
             sonidoPulsacionNumero(String(num));
             seleccionarNumero(j, btn);
         });
@@ -1397,10 +1396,10 @@ function verificarEscribirNumero() {
     }
 }
 
-document.getElementById('btn-en-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-en-escuchar', () => {
     if (!enBloqueado) hablarNumero(enObjetivo);
 });
-document.getElementById('btn-en-decir').addEventListener('click', () => {
+enlazarTactil('btn-en-decir', () => {
     if (enEntrada) hablarNumeroEscrito(enEntrada);
 });
 btnEnSiguiente.addEventListener('click', () => {
@@ -1492,7 +1491,7 @@ function responderElegirNumero(num, btn) {
     }
 }
 
-document.getElementById('btn-el-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-el-escuchar', () => {
     if (!elBloqueado) hablarNumero(elObjetivo);
 });
 btnElSiguiente.addEventListener('click', () => {
@@ -1568,10 +1567,10 @@ function verificarSumarEscribir() {
     }
 }
 
-document.getElementById('btn-se-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-se-escuchar', () => {
     if (!seBloqueado && seRonda) hablarSuma(seRonda.a, seRonda.b);
 });
-document.getElementById('btn-se-decir').addEventListener('click', () => {
+enlazarTactil('btn-se-decir', () => {
     if (seEntrada) hablarNumeroEscrito(seEntrada);
 });
 btnSeSiguiente.addEventListener('click', () => {
@@ -1667,7 +1666,7 @@ function responderSumarElegir(num, btn) {
     }
 }
 
-document.getElementById('btn-sel-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-sel-escuchar', () => {
     if (!selBloqueado && selRonda) hablarSuma(selRonda.a, selRonda.b);
 });
 btnSelSiguiente.addEventListener('click', () => {
@@ -1749,10 +1748,10 @@ function verificarRestarEscribir() {
     }
 }
 
-document.getElementById('btn-re-escuchar').addEventListener('click', () => {
+enlazarTactil('btn-re-escuchar', () => {
     if (!reBloqueado && reRonda) hablarResta(reRonda.total, reRonda.resta);
 });
-document.getElementById('btn-re-decir').addEventListener('click', () => {
+enlazarTactil('btn-re-decir', () => {
     if (reEntrada) hablarNumeroEscrito(reEntrada);
 });
 btnReSiguiente.addEventListener('click', () => {

@@ -244,6 +244,12 @@ button.accion:active {
     gap: 8px;
 }
 
+.quiz-header .btn-volver {
+    min-height: 44px;
+    padding: 10px 14px;
+    flex-shrink: 0;
+}
+
 .palabra-grande {
     font-size: clamp(1.8rem, min(9vw, 10vh), 3.2rem);
     font-weight: 800;

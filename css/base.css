@@ -19,7 +19,6 @@ input.pantalla-teclado,
 }
 
 button,
-.vincular-objetos,
 .ficha-silaba,
 .slot-silaba,
 .tecla-num,
@@ -28,6 +27,10 @@ button,
 .opcion-numero,
 .vincular-numero {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.vincular-objetos {
     -webkit-tap-highlight-color: transparent;
 }
 

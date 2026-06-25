@@ -6,6 +6,26 @@ let vozEspanola = null;
 let audioSets = null;
 let audioActual = null;
 let finCola = null;
+let timerReproduccion = null;
+
+function habiaReproduccionActiva() {
+    return Boolean(audioActual) || synth.speaking || synth.pending;
+}
+
+function despuesDeCancelar(fn, habiaActiva) {
+    if (timerReproduccion !== null) {
+        clearTimeout(timerReproduccion);
+        timerReproduccion = null;
+    }
+    if (habiaActiva) {
+        timerReproduccion = setTimeout(() => {
+            timerReproduccion = null;
+            fn();
+        }, 60);
+        return;
+    }
+    fn();
+}
 
 const NOMBRES_LETRAS = {
     a: 'a', b: 'be', c: 'ce', d: 'de', e: 'e', f: 'efe', g: 'ge', h: 'hache',
@@ -95,6 +115,10 @@ function detenerAudio() {
 }
 
 export function cancelarVoz() {
+    if (timerReproduccion !== null) {
+        clearTimeout(timerReproduccion);
+        timerReproduccion = null;
+    }
     synth.cancel();
     detenerAudio();
 }
@@ -147,21 +171,24 @@ function mensajeSlug(texto) {
 
 export function hablar(texto, alTerminar) {
     if (!texto) return;
+    const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
-    const msg = mensajeSlug(texto);
-    if (tieneAudio('mensajes', msg)) {
-        reproducirUrl(urlAudio('mensajes', msg), alTerminar);
-        return;
-    }
+    despuesDeCancelar(() => {
+        const msg = mensajeSlug(texto);
+        if (tieneAudio('mensajes', msg)) {
+            reproducirUrl(urlAudio('mensajes', msg), alTerminar);
+            return;
+        }
 
-    const palabra = slugAudio(texto);
-    if (tieneAudio('palabras', palabra)) {
-        reproducirUrl(urlAudio('palabras', palabra), alTerminar);
-        return;
-    }
+        const palabra = slugAudio(texto);
+        if (tieneAudio('palabras', palabra)) {
+            reproducirUrl(urlAudio('palabras', palabra), alTerminar);
+            return;
+        }
 
-    hablarTTS(texto, alTerminar);
+        hablarTTS(texto, alTerminar);
+    }, habiaActiva);
 }
 
 function silabaParaVoz(texto) {
@@ -172,21 +199,24 @@ function silabaParaVoz(texto) {
 
 export function hablarSilaba(texto, alTerminar) {
     if (!texto) return;
+    const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
-    const slug = slugAudio(silabaParaVoz(texto));
-    if (tieneAudio('silabas', slug)) {
-        reproducirUrl(urlAudio('silabas', slug), alTerminar);
-        return;
-    }
+    despuesDeCancelar(() => {
+        const slug = slugAudio(silabaParaVoz(texto));
+        if (tieneAudio('silabas', slug)) {
+            reproducirUrl(urlAudio('silabas', slug), alTerminar);
+            return;
+        }
 
-    const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
-    utterance.lang = vozEspanola?.lang || VOZ.idiomaTTS;
-    if (vozEspanola) utterance.voice = vozEspanola;
-    utterance.rate = 0.78;
-    utterance.pitch = 1.05;
-    if (alTerminar) utterance.onend = alTerminar;
-    synth.speak(utterance);
+        const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
+        utterance.lang = vozEspanola?.lang || VOZ.idiomaTTS;
+        if (vozEspanola) utterance.voice = vozEspanola;
+        utterance.rate = 0.78;
+        utterance.pitch = 1.05;
+        if (alTerminar) utterance.onend = alTerminar;
+        synth.speak(utterance);
+    }, habiaActiva);
 }
 
 function normalizarLetra(c) {
@@ -202,32 +232,38 @@ function cadenaEnEspanol(texto) {
 
 export function hablarCadena(texto) {
     if (!texto) return;
+    const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
-    const nombres = cadenaEnEspanol(texto);
-    const slugs = nombres.map((n) => slugAudio(n));
-    if (slugs.length && slugs.every((s) => tieneAudio('letras', s))) {
-        reproducirSecuencia(slugs.map((s) => urlAudio('letras', s)));
-        return;
-    }
+    despuesDeCancelar(() => {
+        const nombres = cadenaEnEspanol(texto);
+        const slugs = nombres.map((n) => slugAudio(n));
+        if (slugs.length && slugs.every((s) => tieneAudio('letras', s))) {
+            reproducirSecuencia(slugs.map((s) => urlAudio('letras', s)));
+            return;
+        }
 
-    hablarTTS(nombres.join(' '));
+        hablarTTS(nombres.join(' '));
+    }, habiaActiva);
 }
 
 export function hablarNumero(n, alTerminar) {
     if (n === undefined || n === null || n === '') return;
+    const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
-    const num = typeof n === 'string' ? parseInt(n, 10) : n;
-    if (!Number.isFinite(num)) return;
+    despuesDeCancelar(() => {
+        const num = typeof n === 'string' ? parseInt(n, 10) : n;
+        if (!Number.isFinite(num)) return;
 
-    const key = String(num);
-    if (tieneAudio('numeros', key)) {
-        reproducirUrl(urlAudio('numeros', key), alTerminar);
-        return;
-    }
+        const key = String(num);
+        if (tieneAudio('numeros', key)) {
+            reproducirUrl(urlAudio('numeros', key), alTerminar);
+            return;
+        }
 
-    hablarTTS(numeroATextoEspanol(num), alTerminar);
+        hablarTTS(numeroATextoEspanol(num), alTerminar);
+    }, habiaActiva);
 }
 
 export function hablarNumeroEscrito(texto) {
