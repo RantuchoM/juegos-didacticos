@@ -197,22 +197,13 @@ function numeroAleatorio(min, max) {
 
 
 function generarRondaVincular(max) {
-    const cantidades = new Set();
-    while (cantidades.size < VINCULAR_GRUPOS) {
-        cantidades.add(numeroAleatorio(1, max));
-    }
-    const correctos = [...cantidades];
-    const distractores = new Set();
-    let intentos = 0;
-    while (distractores.size < VINCULAR_NUMEROS_SIN_PAR && intentos < 200) {
-        intentos++;
-        const n = numeroAleatorio(1, max);
-        if (!cantidades.has(n)) distractores.add(n);
-    }
-    while (distractores.size < VINCULAR_NUMEROS_SIN_PAR) {
-        const n = numeroAleatorio(1, max);
-        if (![...correctos, ...distractores].includes(n)) distractores.add(n);
-    }
+    const maxSeguro = Math.max(1, Math.floor(max));
+    const disponibles = mezclar(Array.from({ length: maxSeguro }, (_, i) => i + 1));
+    const correctos = disponibles.slice(0, Math.min(VINCULAR_GRUPOS, disponibles.length));
+    const distractores = disponibles.slice(
+        correctos.length,
+        correctos.length + VINCULAR_NUMEROS_SIN_PAR
+    );
     return {
         cantidades: correctos,
         numeros: mezclar([...correctos, ...distractores])
@@ -362,12 +353,11 @@ function renderObjetos(contenedor, emoji, cantidad) {
 }
 
 function numerosDistractores(correcto, cantidad, min, max) {
-    const nums = new Set([correcto]);
-    while (nums.size < cantidad) {
-        const n = numeroAleatorio(min, max);
-        nums.add(n);
-    }
-    return mezclar([...nums]);
+    const inicio = Math.min(min, max);
+    const fin = Math.max(min, max);
+    const disponibles = Array.from({ length: fin - inicio + 1 }, (_, i) => inicio + i);
+    const otros = mezclar(disponibles.filter((n) => n !== correcto));
+    return mezclar([correcto, ...otros.slice(0, Math.max(0, cantidad - 1))]);
 }
 
 function tamanioEmojiSuma(cantidad) {
