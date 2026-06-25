@@ -19,36 +19,40 @@ function claveCustom(juegoId) {
     return `customMax_${juegoId}`;
 }
 
-function migrarNivelesAntiguos() {
-    if (localStorage.getItem('nivelMat_migrado_v2')) return;
+function normalizarIndiceNivel(valor, max = TOTAL_NIVELES) {
+    const idx = parseInt(valor ?? '1', 10);
+    if (!Number.isFinite(idx)) return 1;
+    return Math.min(Math.max(idx, 1), max);
+}
 
+function migrarNivelesAntiguos() {
     const viejoContar = localStorage.getItem('nivelContarUnir');
     const viejoMat = localStorage.getItem('nivelMat');
 
-    const mapaIndice = (viejo, maxLista) => {
-        const idx = parseInt(viejo || '1', 10);
-        if (!maxLista) return Math.min(Math.max(idx, 1), NIVELES_PRESET.length);
-        return Math.min(Math.max(idx, 1), NIVELES_PRESET.length);
-    };
+    IDS_JUEGOS_MAT.forEach((juegoId) => {
+        const clave = claveNivel(juegoId);
+        if (localStorage.getItem(clave) !== null) return;
 
-    if (viejoContar) {
-        const i = mapaIndice(viejoContar);
-        localStorage.setItem(claveNivel('contar'), String(i));
-        localStorage.setItem(claveNivel('vincular'), String(i));
-    }
-    if (viejoMat) {
-        const i = mapaIndice(viejoMat);
-        IDS_JUEGOS_MAT.filter((id) => id !== 'contar' && id !== 'vincular').forEach((id) => {
-            localStorage.setItem(claveNivel(id), String(i));
-        });
-    }
+        const viejo = juegoId === 'contar' || juegoId === 'vincular'
+            ? viejoContar
+            : viejoMat;
+        if (viejo === null) return;
+
+        localStorage.setItem(clave, String(normalizarIndiceNivel(viejo, NIVELES_PRESET.length)));
+    });
 
     localStorage.setItem('nivelMat_migrado_v2', '1');
 }
 
 function leerIndice(juegoId) {
-    const raw = parseInt(localStorage.getItem(claveNivel(juegoId)) || '1', 10);
-    return Math.min(Math.max(raw, 1), TOTAL_NIVELES);
+    const clave = claveNivel(juegoId);
+    const guardado = localStorage.getItem(clave);
+    const indice = normalizarIndiceNivel(guardado);
+    const normalizado = String(indice);
+    if (guardado !== normalizado) {
+        localStorage.setItem(clave, normalizado);
+    }
+    return indice;
 }
 
 function guardarIndice(juegoId, indice) {

@@ -52,8 +52,11 @@ También puedes usar `svg` en lugar de `emoji` para dibujos vectoriales (ver la 
 
 Edita `js/config.js`:
 
-- `NIVELES_CONTAR_UNIR` — juegos Contar y Unir
-- `NIVELES_MAT` — Escribir y Elegir número
+- `NIVELES_PRESET` — niveles base de matemática
+- `CONFIG_JUEGOS_MAT` — configuración por juego
+
+Cada juego de matemática guarda su nivel de forma independiente en
+`localStorage` con la clave `nivelMat_<id-del-juego>`.
 
 ### Añadir un juego nuevo
 
