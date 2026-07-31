@@ -73,6 +73,7 @@ html {
 /* Evitar que al mantener pulsado en táctil se seleccione el texto del botón */
 button,
 input.pantalla-teclado,
+textarea.pantalla-teclado,
 .pantalla-juego,
 .pantalla-juego *,
 .celebracion-cinco,

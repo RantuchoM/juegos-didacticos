@@ -741,7 +741,10 @@ function mostrarJuego(id) {
     if (id === 'teclado') {
         juegoTeclado.classList.remove('oculto');
         longitudTecladoAnterior = textoActual.length;
-        requestAnimationFrame(() => pantalla.focus());
+        requestAnimationFrame(() => {
+            ajustarTamanoFuenteTeclado();
+            pantalla.focus();
+        });
     }
     if (id === 'silabas') {
         juegoSilabas.classList.remove('oculto');
@@ -798,6 +801,8 @@ function mostrarMenuUI() {
     textoActual = '';
     pantalla.value = '';
     longitudTecladoAnterior = 0;
+    pantalla.style.fontSize = '';
+    pantalla.style.height = '';
     pantalla.blur();
 }
 
@@ -865,9 +870,11 @@ document.querySelectorAll('[data-volver]').forEach((btn) => {
 
 // --- Juego teclado ---
 const pantalla = document.getElementById('pantalla');
+const pantallaCaja = pantalla?.closest('.pantalla-teclado-caja');
 let textoActual = '';
 let longitudTecladoAnterior = 0;
 let tecladoHablarTimer = null;
+const TECLADO_FS_MIN = 18;
 
 (function iniciarRuta() {
     const inicial = leerRutaDesdeHash();
@@ -878,6 +885,49 @@ let tecladoHablarTimer = null;
 
 function filtrarTextoTeclado(texto) {
     return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
+}
+
+function fuenteMaximaTeclado() {
+    const caja = pantallaCaja || pantalla;
+    const h = caja.clientHeight || 200;
+    const w = caja.clientWidth || 300;
+    return Math.max(TECLADO_FS_MIN, Math.min(120, Math.floor(Math.min(h * 0.5, w * 0.32))));
+}
+
+/** Achica la fuente para que la palabra completa entre; varias palabras pueden pasar de línea. */
+function ajustarTamanoFuenteTeclado() {
+    if (!pantalla || !pantallaCaja) return;
+    if (juegoTeclado.classList.contains('oculto')) return;
+
+    const availH = Math.max(1, pantallaCaja.clientHeight - 8);
+    const availW = Math.max(1, pantallaCaja.clientWidth - 8);
+    const maxFs = fuenteMaximaTeclado();
+
+    if (!textoActual) {
+        pantalla.style.fontSize = `${maxFs}px`;
+        pantalla.style.height = 'auto';
+        return;
+    }
+
+    let lo = TECLADO_FS_MIN;
+    let hi = maxFs;
+    let best = TECLADO_FS_MIN;
+    while (lo <= hi) {
+        const mid = (lo + hi + 1) >> 1;
+        pantalla.style.fontSize = `${mid}px`;
+        pantalla.style.height = 'auto';
+        void pantalla.offsetHeight;
+        const cabe = pantalla.scrollHeight <= availH + 2
+            && pantalla.scrollWidth <= availW + 2;
+        if (cabe) {
+            best = mid;
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    pantalla.style.fontSize = `${best}px`;
+    pantalla.style.height = 'auto';
 }
 
 /** Espera a que terminen de tipear para leer la palabra formada (no cada letra suelta). */
@@ -905,6 +955,7 @@ function actualizarTecladoDesdeInput() {
     longitudTecladoAnterior = filtrado.length;
     if (filtrado !== pantalla.value) pantalla.value = filtrado;
     textoActual = filtrado;
+    ajustarTamanoFuenteTeclado();
     if (textoActual) programarHablarTeclado();
     else {
         cancelarHablarTecladoProgramado();
@@ -920,12 +971,21 @@ document.getElementById('btn-borrar').addEventListener('click', () => {
     cancelarHablarTecladoProgramado();
     textoActual = '';
     pantalla.value = '';
+    longitudTecladoAnterior = 0;
     cancelarVoz();
+    ajustarTamanoFuenteTeclado();
     pantalla.focus();
 });
 
 pantalla.addEventListener('input', actualizarTecladoDesdeInput);
 pantalla.addEventListener('click', () => pantalla.focus());
+pantalla.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') event.preventDefault();
+});
+
+window.addEventListener('resize', () => {
+    if (!juegoTeclado.classList.contains('oculto')) ajustarTamanoFuenteTeclado();
+});
 
 document.addEventListener('keydown', (event) => {
     const tecla = event.key;
@@ -935,11 +995,15 @@ document.addEventListener('keydown', (event) => {
             sonidoPulsacionLetra();
             textoActual += tecla;
             pantalla.value = textoActual;
+            longitudTecladoAnterior = textoActual.length;
+            ajustarTamanoFuenteTeclado();
             programarHablarTeclado();
             event.preventDefault();
         } else if (tecla === 'Backspace') {
             textoActual = textoActual.slice(0, -1);
             pantalla.value = textoActual;
+            longitudTecladoAnterior = textoActual.length;
+            ajustarTamanoFuenteTeclado();
             if (textoActual !== '') programarHablarTeclado();
             else {
                 cancelarHablarTecladoProgramado();

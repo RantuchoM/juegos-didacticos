@@ -1,28 +1,53 @@
 /* --- Teclado --- */
-#pantalla.pantalla-teclado {
-    font-size: clamp(36px, min(16vw, 14vh), 120px);
+.pantalla-teclado-caja {
     width: 100%;
     flex: 1 1 0;
     min-height: 0;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 8px solid #4fc3f7;
     border-radius: clamp(20px, 4vh, 36px);
     background: white;
     margin-bottom: clamp(6px, 1.5vh, 12px);
-    color: #0288d1;
     box-shadow: 0 10px 0 #b3e5fc;
-    padding: clamp(8px, 2vh, 16px);
-    word-break: break-all;
-    font-family: inherit;
-    font-weight: 800;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
+    padding: clamp(8px, 1.5vh, 14px);
+    overflow: hidden;
 }
 
-#pantalla.pantalla-teclado:focus {
+.pantalla-teclado-caja:focus-within {
     border-color: #0288d1;
     box-shadow: 0 10px 0 #b3e5fc, 0 0 0 3px rgba(79, 195, 247, 0.35);
+}
+
+#pantalla.pantalla-teclado {
+    width: 100%;
+    max-height: 100%;
+    height: auto;
+    min-height: 1.2em;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    color: #0288d1;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: clamp(36px, min(16vw, 14vh), 120px);
+    line-height: 1.15;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: normal;
+    field-sizing: content;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 #pantalla.pantalla-teclado::placeholder {
@@ -30,6 +55,7 @@
     font-weight: 600;
     color: #81d4fa;
     opacity: 1;
+    line-height: 1.3;
 }
 
 .controles {

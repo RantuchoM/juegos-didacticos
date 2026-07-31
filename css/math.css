@@ -428,10 +428,6 @@
 
     .btn-juego { min-height: 44px; }
 
-    #pantalla {
-        font-size: clamp(28px, 12vh, 72px);
-    }
-
     .objetos-grid { max-height: 18vh; }
 
     .objetos-grid--agrupado { max-height: 28vh; }
