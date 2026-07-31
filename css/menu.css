@@ -253,7 +253,8 @@
 
 .btn-toggle-mayus,
 .btn-toggle-lectura,
-.btn-toggle-spoiler {
+.btn-toggle-spoiler,
+.btn-toggle-autovoz {
     min-width: 48px;
     height: 48px;
     padding: 0 12px;
@@ -274,7 +275,8 @@
 
 .btn-toggle-mayus:active,
 .btn-toggle-lectura:active,
-.btn-toggle-spoiler:active {
+.btn-toggle-spoiler:active,
+.btn-toggle-autovoz:active {
     transform: translateY(3px);
     box-shadow: 0 1px 0 #fbc02d;
 }
@@ -317,6 +319,32 @@
     background: #4fc3f7;
     box-shadow: 0 4px 0 #0288d1;
     color: white;
+}
+
+.btn-toggle-autovoz {
+    background: #fff3e0;
+    box-shadow: 0 4px 0 #ffb74d;
+    color: #e65100;
+    padding: 0;
+}
+
+.btn-toggle-autovoz:active {
+    box-shadow: 0 1px 0 #ffb74d;
+}
+
+.btn-toggle-autovoz.activo {
+    background: #ff9800;
+    box-shadow: 0 4px 0 #ef6c00;
+    color: white;
+}
+
+.btn-toggle-autovoz .icon-autovoz {
+    width: 26px;
+    height: 26px;
+}
+
+.btn-toggle-autovoz.activo .autovoz-tachado {
+    display: none;
 }
 
 .menu-accesibilidad {

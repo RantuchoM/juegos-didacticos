@@ -1,8 +1,9 @@
 {
-  "buildId": "v6",
+  "buildId": "v7",
   "title": "¡Novedades!",
   "changes": [
-    "Cartel de bienvenida con el resumen de cada versión nueva",
-    "La app se actualiza sola al abrirla (PWA)"
+    "Teclado: lee la palabra formada (hola), no letra por letra (hache o ele a)",
+    "Mensajes «¡Muy bien!» otra vez en verde después de un «¡Casi!»",
+    "Mejor actualización de la app en el teléfono"
   ]
 }

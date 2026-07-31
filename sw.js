@@ -1,6 +1,6 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -45,7 +45,11 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((key) => key.startsWith('teclado-magico-') && key !== CACHE_NAME)
+          .filter(
+            (key) =>
+              key !== CACHE_NAME &&
+              (key.startsWith('teclado-magico-') || key.startsWith('juegos-didacticos-'))
+          )
           .map((key) => caches.delete(key))
       );
       await self.clients.claim();

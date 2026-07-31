@@ -52,6 +52,8 @@ document.getElementById('btn-celebracion-continuar').addEventListener('click', c
 let palabrasMayusculas = localStorage.getItem('palabrasMayus') !== 'min';
 let lecturaFacil = localStorage.getItem('lecturaFacil') === '1';
 let spoilerImagenes = localStorage.getItem('spoilerImagenes') === '1';
+/** Si es false, Teclado solo habla al apretar el botón 🔊. */
+let tecladoAutoVoz = localStorage.getItem('tecladoAutoVoz') === '1';
 
 const SVG_OJO = '<svg class="icon-ojo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 const SVG_OJO_TACHADO = '<svg class="icon-ojo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
@@ -108,6 +110,26 @@ function alternarSpoilerImagenes() {
     sincronizarSpoilerPI();
 }
 
+function aplicarTecladoAutoVoz() {
+    const btn = document.getElementById('btn-teclado-autovoz');
+    if (!btn) return;
+    btn.classList.toggle('activo', tecladoAutoVoz);
+    btn.setAttribute('aria-pressed', tecladoAutoVoz ? 'true' : 'false');
+    btn.title = tecladoAutoVoz
+        ? 'Leer al escribir (activado) — tocá para usar solo el botón 🔊'
+        : 'Solo con el botón 🔊 — tocá para leer al escribir';
+}
+
+function alternarTecladoAutoVoz() {
+    tecladoAutoVoz = !tecladoAutoVoz;
+    localStorage.setItem('tecladoAutoVoz', tecladoAutoVoz ? '1' : '0');
+    aplicarTecladoAutoVoz();
+    if (!tecladoAutoVoz) {
+        cancelarHablarTecladoProgramado();
+        cancelarVoz();
+    }
+}
+
 document.querySelectorAll('[data-toggle-mayus]').forEach((btn) => {
     btn.addEventListener('click', alternarModoLetras);
 });
@@ -117,9 +139,11 @@ document.querySelectorAll('[data-toggle-lectura]').forEach((btn) => {
 document.querySelectorAll('[data-toggle-spoiler]').forEach((btn) => {
     btn.addEventListener('click', alternarSpoilerImagenes);
 });
+document.getElementById('btn-teclado-autovoz')?.addEventListener('click', alternarTecladoAutoVoz);
 aplicarModoLetras();
 aplicarLecturaFacil();
 aplicarSpoilerImagenes();
+aplicarTecladoAutoVoz();
 
 // --- Audio matemática ---
 let audioCtx = null;
@@ -764,6 +788,7 @@ function mostrarJuego(id) {
 function mostrarMenuUI() {
     cancelarAutoSiguiente();
     modoAleatorio = false;
+    cancelarHablarTecladoProgramado();
     cancelarVoz();
     cerrarCelebracion();
     desactivarEntradaNumerica();
@@ -842,6 +867,7 @@ document.querySelectorAll('[data-volver]').forEach((btn) => {
 const pantalla = document.getElementById('pantalla');
 let textoActual = '';
 let longitudTecladoAnterior = 0;
+let tecladoHablarTimer = null;
 
 (function iniciarRuta() {
     const inicial = leerRutaDesdeHash();
@@ -854,6 +880,23 @@ function filtrarTextoTeclado(texto) {
     return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
 }
 
+/** Espera a que terminen de tipear para leer la palabra formada (no cada letra suelta). */
+function programarHablarTeclado() {
+    if (!tecladoAutoVoz) return;
+    if (tecladoHablarTimer !== null) clearTimeout(tecladoHablarTimer);
+    tecladoHablarTimer = setTimeout(() => {
+        tecladoHablarTimer = null;
+        if (textoActual) hablarCadena(textoActual);
+    }, 320);
+}
+
+function cancelarHablarTecladoProgramado() {
+    if (tecladoHablarTimer !== null) {
+        clearTimeout(tecladoHablarTimer);
+        tecladoHablarTimer = null;
+    }
+}
+
 function actualizarTecladoDesdeInput() {
     const filtrado = filtrarTextoTeclado(pantalla.value);
     if (filtrado.length > longitudTecladoAnterior) {
@@ -862,11 +905,19 @@ function actualizarTecladoDesdeInput() {
     longitudTecladoAnterior = filtrado.length;
     if (filtrado !== pantalla.value) pantalla.value = filtrado;
     textoActual = filtrado;
-    if (textoActual) hablarCadena(textoActual);
+    if (textoActual) programarHablarTeclado();
+    else {
+        cancelarHablarTecladoProgramado();
+        if (tecladoAutoVoz) cancelarVoz();
+    }
 }
 
-enlazarTactil('btn-repetir', () => hablarCadena(textoActual));
+enlazarTactil('btn-repetir', () => {
+    cancelarHablarTecladoProgramado();
+    hablarCadena(textoActual);
+});
 document.getElementById('btn-borrar').addEventListener('click', () => {
+    cancelarHablarTecladoProgramado();
     textoActual = '';
     pantalla.value = '';
     cancelarVoz();
@@ -884,12 +935,16 @@ document.addEventListener('keydown', (event) => {
             sonidoPulsacionLetra();
             textoActual += tecla;
             pantalla.value = textoActual;
-            hablarCadena(textoActual);
+            programarHablarTeclado();
             event.preventDefault();
         } else if (tecla === 'Backspace') {
             textoActual = textoActual.slice(0, -1);
             pantalla.value = textoActual;
-            if (textoActual !== '') hablarCadena(textoActual);
+            if (textoActual !== '') programarHablarTeclado();
+            else {
+                cancelarHablarTecladoProgramado();
+                cancelarVoz();
+            }
             event.preventDefault();
         }
         return;

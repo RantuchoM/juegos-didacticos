@@ -126,21 +126,43 @@ export function cancelarVoz() {
 }
 
 /**
- * Prepara texto para que el TTS lo lea en español como fonemas concatenados
- * (no deletreo). Las mayúsculas sostenidas hacen que Chrome/Safari deletreen.
+ * Prepara texto para que el TTS lo lea en español como palabra (no deletreo).
+ * Mayúsculas sostenidas y letras separadas por espacios hacen que Chrome/Safari/Sabina deletreen.
  */
 function textoParaLecturaEspanol(texto) {
-    const t = String(texto).trim().replace(/\s+/g, ' ');
+    let t = String(texto).normalize('NFC').trim().replace(/\s+/g, ' ');
     if (!t) return t;
-    if (/[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]/.test(t)) {
-        return t.toLocaleLowerCase('es');
+    const partes = t.split(' ');
+    // "H O L A" / "h o l a" → "hola" (si no, el TTS dice «hache o ele a»)
+    if (partes.length > 1 && partes.every((p) => [...p].length === 1)) {
+        t = partes.join('');
     }
-    return t;
+    return t.toLocaleLowerCase('es');
+}
+
+/** Fonema de una letra (sonido), no el nombre («eme», «hache», «ele»…). */
+function fonemaLetra(letra) {
+    const l = letra.toLocaleLowerCase('es');
+    if (l === 'h') return '';
+    if ('aeiouáéíóúü'.includes(l)) {
+        return l.normalize('NFD').replace(/\p{M}/gu, '');
+    }
+    const alargados = {
+        m: 'mm', n: 'nn', ñ: 'ñ', s: 'ss', f: 'ff', l: 'll', r: 'rr',
+        z: 'ss', j: 'jj', y: 'yy', c: 'cc', p: 'pp', t: 'tt', d: 'dd',
+        b: 'bb', g: 'gg', k: 'kk', q: 'cc', v: 'bb', w: 'uu', x: 'ks'
+    };
+    return alargados[l] || `${l}${l}`;
 }
 
 function hablarTTS(texto, alTerminar) {
     if (!texto) return;
     const paraVoz = textoParaLecturaEspanol(texto);
+    if (!paraVoz) return;
+    hablarTTSCrudo(paraVoz, alTerminar);
+}
+
+function hablarTTSCrudo(paraVoz, alTerminar) {
     if (!paraVoz) return;
 
     if (!vozEspanola) cargarVoces();
@@ -238,10 +260,33 @@ export function hablarSilaba(texto, alTerminar) {
     }, habiaActiva);
 }
 
-/** Lee el texto formado como palabra/fonemas en español (no deletrea letra a letra). */
+/**
+ * Lee el texto del teclado como palabra(s) en español.
+ * No usa nombres de letra («hache», «ele»…): eso sonaba a deletreo de «Hola».
+ */
 export function hablarCadena(texto) {
     if (!texto) return;
-    hablar(texto);
+    const habiaActiva = habiaReproduccionActiva();
+    cancelarVoz();
+
+    despuesDeCancelar(() => {
+        const t = textoParaLecturaEspanol(texto);
+        if (!t) return;
+
+        const slug = slugAudio(t);
+        if (tieneAudio('palabras', slug)) {
+            reproducirUrl(urlAudio('palabras', slug));
+            return;
+        }
+
+        if ([...t].length === 1) {
+            const fonema = fonemaLetra(t);
+            if (fonema) hablarTTSCrudo(fonema);
+            return;
+        }
+
+        hablarTTSCrudo(t);
+    }, habiaActiva);
 }
 
 export function hablarNumero(n, alTerminar) {
