@@ -4,13 +4,35 @@
     grid-template-columns: repeat(3, 1fr);
     gap: clamp(6px, 1.2vh, 10px);
     width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
     align-content: start;
+    padding-bottom: 12px;
 }
 
 @media (max-width: 480px) {
-    .menu-botones { grid-template-columns: repeat(2, 1fr); }
+    .menu-botones {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .btn-juego {
+        min-height: 64px;
+        padding: 10px 6px;
+        font-size: 0.78rem;
+    }
+
+    .btn-juego .emoji-menu {
+        font-size: 1.65rem;
+    }
+
+    .btn-juego-aleatorio {
+        min-height: 60px;
+    }
+
+    .menu-seccion {
+        margin-top: 8px;
+        padding-top: 4px;
+    }
 }
 
 .btn-juego {
@@ -229,7 +251,9 @@
     align-items: center;
 }
 
-.btn-toggle-mayus {
+.btn-toggle-mayus,
+.btn-toggle-lectura,
+.btn-toggle-spoiler {
     min-width: 48px;
     height: 48px;
     padding: 0 12px;
@@ -243,11 +267,66 @@
     cursor: pointer;
     font-family: inherit;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn-toggle-mayus:active {
+.btn-toggle-mayus:active,
+.btn-toggle-lectura:active,
+.btn-toggle-spoiler:active {
     transform: translateY(3px);
     box-shadow: 0 1px 0 #fbc02d;
+}
+
+.btn-toggle-spoiler {
+    background: #e8f5e9;
+    box-shadow: 0 4px 0 #81c784;
+    color: #2e7d32;
+    padding: 0;
+}
+
+.btn-toggle-spoiler:active {
+    box-shadow: 0 1px 0 #81c784;
+}
+
+.btn-toggle-spoiler.activo {
+    background: #66bb6a;
+    box-shadow: 0 4px 0 #388e3c;
+    color: white;
+}
+
+.btn-toggle-spoiler .icon-ojo {
+    width: 26px;
+    height: 26px;
+}
+
+.btn-toggle-lectura {
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    background: #e1f5fe;
+    box-shadow: 0 4px 0 #81d4fa;
+    color: #01579b;
+}
+
+.btn-toggle-lectura:active {
+    box-shadow: 0 1px 0 #81d4fa;
+}
+
+.btn-toggle-lectura.activo {
+    background: #4fc3f7;
+    box-shadow: 0 4px 0 #0288d1;
+    color: white;
+}
+
+.menu-accesibilidad {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: clamp(4px, 1vh, 8px);
+    flex-shrink: 0;
 }
 
 body.modo-mayusculas #pantalla,

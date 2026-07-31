@@ -1,3 +1,67 @@
+@font-face {
+    font-family: 'Lexend';
+    src: url('../fonts/lexend-400.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lexend';
+    src: url('../fonts/lexend-700.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lexend';
+    src: url('../fonts/lexend-700.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lexend';
+    src: url('../fonts/lexend-700.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/opendyslexic-400.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/opendyslexic-700.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/opendyslexic-700.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/opendyslexic-700.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
 * { box-sizing: border-box; }
 
 html {
@@ -35,7 +99,10 @@ button,
 }
 
 body {
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Lexend', 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 0.03em;
+    word-spacing: 0.06em;
+    line-height: 1.5;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -46,6 +113,33 @@ body {
     padding: max(6px, env(safe-area-inset-top)) 10px max(6px, env(safe-area-inset-bottom));
     background-color: #e0f7fa;
     overflow: hidden;
+}
+
+/* Lectura fácil: OpenDyslexic + más espacio + fondo suave */
+body.modo-lectura-facil {
+    font-family: 'OpenDyslexic', 'Lexend', Arial, sans-serif;
+    letter-spacing: 0.08em;
+    word-spacing: 0.16em;
+    line-height: 1.65;
+    background-color: #f3efe3;
+}
+
+body.modo-lectura-facil #pantalla,
+body.modo-lectura-facil .palabra-grande,
+body.modo-lectura-facil .ficha-silaba,
+body.modo-lectura-facil .slot-silaba,
+body.modo-lectura-facil .opcion-palabra,
+body.modo-lectura-facil .silaba-click,
+body.modo-lectura-facil .btn-juego,
+body.modo-lectura-facil .tecla-num,
+body.modo-lectura-facil .opcion-numero,
+body.modo-lectura-facil .vincular-numero,
+body.modo-lectura-facil .resta-num-verde,
+body.modo-lectura-facil .resta-num-rojo,
+body.modo-lectura-facil .resta-respuesta,
+body.modo-lectura-facil .suma-cantidad {
+    letter-spacing: 0.12em;
+    word-spacing: 0.18em;
 }
 
 .pantalla-juego {
@@ -59,7 +153,15 @@ body {
     overflow: hidden;
 }
 
-#menu.pantalla-juego { max-width: 720px; }
+#menu.pantalla-juego {
+    max-width: 720px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
 .oculto { display: none !important; }
 
 h1 {

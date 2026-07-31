@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0288d1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Teclado Mágico">
     <title>Mi Teclado Mágico</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/menu.css">
     <link rel="stylesheet" href="css/reading.css">
@@ -13,6 +20,9 @@
 <body>
 <!-- Menú principal -->
     <section id="menu" class="pantalla-juego">
+        <div class="menu-accesibilidad">
+            <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
+        </div>
         <h1>¿Qué jugamos?</h1>
         <div class="menu-botones">
             <button class="btn-juego btn-juego-aleatorio" type="button" data-juego="aleatorio">
@@ -72,7 +82,10 @@
     <section id="juego-teclado" class="pantalla-juego oculto">
         <div class="lectura-top">
             <button type="button" class="btn-volver" data-volver>← Volver</button>
-            <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+            <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+            </div>
         </div>
         <input type="text" id="pantalla" class="pantalla-teclado" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Toca para escribir" aria-label="Escribe letras aquí">
         <div class="controles">
@@ -89,6 +102,7 @@
         <div class="silabas-header">
             <span id="silabas-contador">Palabra 1 de 50</span>
             <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
                 <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
                 <button type="button" class="btn-volver" id="btn-escuchar-pista" title="Escuchar la palabra">🔊 Pista</button>
             </div>
@@ -106,12 +120,22 @@
         <div class="quiz-header">
             <span id="pi-contador">Palabra 1 de 50</span>
             <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
                 <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-toggle-spoiler" id="btn-pi-spoiler" data-toggle-spoiler aria-pressed="false" title="Ocultar imágenes al leer">
+                    <svg class="icon-ojo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
                 <button type="button" class="btn-volver" id="btn-pi-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
             </div>
         </div>
         <div id="pi-palabra" class="palabra-grande"></div>
-        <div id="pi-opciones" class="opciones-imagenes"></div>
+        <div class="pi-opciones-wrap" id="pi-opciones-wrap">
+            <div id="pi-opciones" class="opciones-imagenes"></div>
+            <button type="button" id="pi-revelar" class="spoiler-telegram oculto" aria-label="Mostrar imágenes">
+                <span class="spoiler-noise" aria-hidden="true"></span>
+                <span class="spoiler-hint">Tocar para ver</span>
+            </button>
+        </div>
         <div id="pi-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-pi-siguiente" class="btn-siguiente oculto">Siguiente →</button>
     </section>
@@ -122,6 +146,7 @@
         <div class="quiz-header">
             <span id="ip-contador">Palabra 1 de 50</span>
             <div class="lectura-header-acciones">
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
                 <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
                 <button type="button" class="btn-volver" id="btn-ip-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
             </div>

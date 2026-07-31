@@ -1,6 +1,8 @@
 import { initVoz } from './speech.js';
 import { initDificultadMat } from './dificultad-mat.js';
+import { initPwa } from './pwa.js';
 
+initPwa();
 await initVoz();
 initDificultadMat();
 

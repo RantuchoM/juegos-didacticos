@@ -81,6 +81,39 @@
     line-height: 1;
 }
 
+.objetos-grid--agrupado {
+    gap: clamp(6px, 1.2vh, 10px);
+    max-height: clamp(100px, 32vh, 220px);
+}
+
+.objetos-decena {
+    background: #e1f5fe;
+    border: 3px solid #81d4fa;
+    border-radius: 12px;
+    padding: clamp(4px, 0.8vh, 8px);
+    flex: 0 0 auto;
+}
+
+.objetos-decena.marco-diez {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: clamp(2px, 0.4vh, 4px);
+}
+
+.objetos-decena.objetos-unidades {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(2px, 0.4vh, 4px);
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    min-width: clamp(3.5rem, 14vw, 5rem);
+    min-height: clamp(2.5rem, 8vh, 3.5rem);
+    border-color: #ffb74d;
+    background: #fff8e1;
+}
+
 .teclado-numerico {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -400,6 +433,8 @@
     }
 
     .objetos-grid { max-height: 18vh; }
+
+    .objetos-grid--agrupado { max-height: 28vh; }
 
     .tecla-num {
         padding: 6px 2px;

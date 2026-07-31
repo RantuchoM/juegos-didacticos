@@ -21,18 +21,11 @@ function despuesDeCancelar(fn, habiaActiva) {
         timerReproduccion = setTimeout(() => {
             timerReproduccion = null;
             fn();
-        }, 60);
+        }, 100);
         return;
     }
     fn();
 }
-
-const NOMBRES_LETRAS = {
-    a: 'a', b: 'be', c: 'ce', d: 'de', e: 'e', f: 'efe', g: 'ge', h: 'hache',
-    i: 'i', j: 'jota', k: 'ka', l: 'ele', m: 'eme', n: 'ene', ñ: 'eñe', o: 'o',
-    p: 'pe', q: 'cu', r: 'erre', s: 'ese', t: 'te', u: 'u', v: 'uve', w: 'doble uve',
-    x: 'equis', y: 'i griega', z: 'zeta', ' ': 'espacio'
-};
 
 function esLatino(v) {
     const lang = v.lang.toLowerCase();
@@ -123,11 +116,33 @@ export function cancelarVoz() {
     detenerAudio();
 }
 
+/**
+ * Prepara texto para que el TTS lo lea en español como fonemas concatenados
+ * (no deletreo). Las mayúsculas sostenidas hacen que Chrome/Safari deletreen.
+ */
+function textoParaLecturaEspanol(texto) {
+    const t = String(texto).trim().replace(/\s+/g, ' ');
+    if (!t) return t;
+    if (/[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]/.test(t)) {
+        return t.toLocaleLowerCase('es');
+    }
+    return t;
+}
+
 function hablarTTS(texto, alTerminar) {
     if (!texto) return;
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = vozEspanola?.lang || VOZ.idiomaTTS;
-    if (vozEspanola) utterance.voice = vozEspanola;
+    const paraVoz = textoParaLecturaEspanol(texto);
+    if (!paraVoz) return;
+
+    if (!vozEspanola) cargarVoces();
+    if (synth.paused) synth.resume();
+
+    const utterance = new SpeechSynthesisUtterance(paraVoz);
+    utterance.lang = VOZ.idiomaTTS;
+    if (vozEspanola) {
+        utterance.voice = vozEspanola;
+        utterance.lang = vozEspanola.lang || VOZ.idiomaTTS;
+    }
     utterance.rate = 0.85;
     utterance.pitch = 1.05;
     if (alTerminar) utterance.onend = alTerminar;
@@ -145,24 +160,6 @@ function reproducirUrl(url, alTerminar) {
     audio.onended = terminar;
     audio.onerror = terminar;
     audio.play().catch(terminar);
-}
-
-function reproducirSecuencia(urls, alTerminar) {
-    detenerAudio();
-    let i = 0;
-    const siguiente = () => {
-        if (i >= urls.length) {
-            audioActual = null;
-            alTerminar?.();
-            return;
-        }
-        const audio = new Audio(urls[i++]);
-        audioActual = audio;
-        audio.onended = siguiente;
-        audio.onerror = siguiente;
-        audio.play().catch(siguiente);
-    };
-    siguiente();
 }
 
 function mensajeSlug(texto) {
@@ -209,9 +206,13 @@ export function hablarSilaba(texto, alTerminar) {
             return;
         }
 
+        if (synth.paused) synth.resume();
         const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
-        utterance.lang = vozEspanola?.lang || VOZ.idiomaTTS;
-        if (vozEspanola) utterance.voice = vozEspanola;
+        utterance.lang = VOZ.idiomaTTS;
+        if (vozEspanola) {
+            utterance.voice = vozEspanola;
+            utterance.lang = vozEspanola.lang || VOZ.idiomaTTS;
+        }
         utterance.rate = 0.78;
         utterance.pitch = 1.05;
         if (alTerminar) utterance.onend = alTerminar;
@@ -219,32 +220,10 @@ export function hablarSilaba(texto, alTerminar) {
     }, habiaActiva);
 }
 
-function normalizarLetra(c) {
-    return c.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-}
-
-function cadenaEnEspanol(texto) {
-    return texto
-        .split('')
-        .map((c) => NOMBRES_LETRAS[normalizarLetra(c)] || NOMBRES_LETRAS[c.toLowerCase()])
-        .filter(Boolean);
-}
-
+/** Lee el texto formado como palabra/fonemas en español (no deletrea letra a letra). */
 export function hablarCadena(texto) {
     if (!texto) return;
-    const habiaActiva = habiaReproduccionActiva();
-    cancelarVoz();
-
-    despuesDeCancelar(() => {
-        const nombres = cadenaEnEspanol(texto);
-        const slugs = nombres.map((n) => slugAudio(n));
-        if (slugs.length && slugs.every((s) => tieneAudio('letras', s))) {
-            reproducirSecuencia(slugs.map((s) => urlAudio('letras', s)));
-            return;
-        }
-
-        hablarTTS(nombres.join(' '));
-    }, habiaActiva);
+    hablar(texto);
 }
 
 export function hablarNumero(n, alTerminar) {

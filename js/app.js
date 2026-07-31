@@ -50,6 +50,11 @@ function registrarEjercicioCompletado() {
 document.getElementById('btn-celebracion-continuar').addEventListener('click', cerrarCelebracion);
 
 let palabrasMayusculas = localStorage.getItem('palabrasMayus') !== 'min';
+let lecturaFacil = localStorage.getItem('lecturaFacil') === '1';
+let spoilerImagenes = localStorage.getItem('spoilerImagenes') === '1';
+
+const SVG_OJO = '<svg class="icon-ojo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+const SVG_OJO_TACHADO = '<svg class="icon-ojo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 
 function aplicarModoLetras() {
     document.body.classList.toggle('modo-mayusculas', palabrasMayusculas);
@@ -66,10 +71,55 @@ function alternarModoLetras() {
     aplicarModoLetras();
 }
 
+function aplicarLecturaFacil() {
+    document.body.classList.toggle('modo-lectura-facil', lecturaFacil);
+    document.querySelectorAll('[data-toggle-lectura]').forEach((btn) => {
+        btn.classList.toggle('activo', lecturaFacil);
+        btn.setAttribute('aria-pressed', lecturaFacil ? 'true' : 'false');
+        btn.title = lecturaFacil ? 'Desactivar lectura fácil' : 'Activar lectura fácil';
+    });
+}
+
+function alternarLecturaFacil() {
+    lecturaFacil = !lecturaFacil;
+    localStorage.setItem('lecturaFacil', lecturaFacil ? '1' : '0');
+    aplicarLecturaFacil();
+}
+
+function actualizarBotonesSpoiler() {
+    document.querySelectorAll('[data-toggle-spoiler]').forEach((btn) => {
+        btn.classList.toggle('activo', spoilerImagenes);
+        btn.setAttribute('aria-pressed', spoilerImagenes ? 'true' : 'false');
+        btn.title = spoilerImagenes
+            ? 'Mostrar imágenes siempre'
+            : 'Ocultar imágenes al leer';
+        btn.innerHTML = spoilerImagenes ? SVG_OJO_TACHADO : SVG_OJO;
+    });
+}
+
+function aplicarSpoilerImagenes() {
+    actualizarBotonesSpoiler();
+}
+
+function alternarSpoilerImagenes() {
+    spoilerImagenes = !spoilerImagenes;
+    localStorage.setItem('spoilerImagenes', spoilerImagenes ? '1' : '0');
+    actualizarBotonesSpoiler();
+    sincronizarSpoilerPI();
+}
+
 document.querySelectorAll('[data-toggle-mayus]').forEach((btn) => {
     btn.addEventListener('click', alternarModoLetras);
 });
+document.querySelectorAll('[data-toggle-lectura]').forEach((btn) => {
+    btn.addEventListener('click', alternarLecturaFacil);
+});
+document.querySelectorAll('[data-toggle-spoiler]').forEach((btn) => {
+    btn.addEventListener('click', alternarSpoilerImagenes);
+});
 aplicarModoLetras();
+aplicarLecturaFacil();
+aplicarSpoilerImagenes();
 
 // --- Audio matemática ---
 let audioCtx = null;
@@ -432,15 +482,49 @@ function tamanioEmojiVincular(cantidad) {
     return 'clamp(0.55rem, 2.4vh, 0.95rem)';
 }
 
+function crearObjetoItem(emoji, fontSize) {
+    const span = document.createElement('span');
+    span.className = 'objeto-item';
+    span.style.fontSize = fontSize;
+    span.textContent = emoji;
+    return span;
+}
+
 function renderObjetos(contenedor, emoji, cantidad) {
     contenedor.innerHTML = '';
-    const fz = tamanioEmojiPorCantidad(cantidad);
-    for (let i = 0; i < cantidad; i++) {
-        const span = document.createElement('span');
-        span.className = 'objeto-item';
-        span.style.fontSize = fz;
-        span.textContent = emoji;
-        contenedor.appendChild(span);
+    contenedor.classList.toggle('objetos-grid--agrupado', cantidad > 10);
+
+    if (cantidad <= 10) {
+        const fz = tamanioEmojiPorCantidad(cantidad);
+        for (let i = 0; i < cantidad; i++) {
+            contenedor.appendChild(crearObjetoItem(emoji, fz));
+        }
+        return;
+    }
+
+    const decenasCompletas = Math.floor(cantidad / 10);
+    const unidades = cantidad % 10;
+    const fzDecena = tamanioEmojiPorCantidad(10);
+
+    for (let d = 0; d < decenasCompletas; d++) {
+        const grupo = document.createElement('div');
+        grupo.className = 'objetos-decena marco-diez';
+        grupo.setAttribute('aria-hidden', 'true');
+        for (let i = 0; i < 10; i++) {
+            grupo.appendChild(crearObjetoItem(emoji, fzDecena));
+        }
+        contenedor.appendChild(grupo);
+    }
+
+    if (unidades > 0) {
+        const grupo = document.createElement('div');
+        grupo.className = 'objetos-decena objetos-unidades';
+        grupo.setAttribute('aria-hidden', 'true');
+        const fzUnidades = tamanioEmojiPorCantidad(unidades);
+        for (let i = 0; i < unidades; i++) {
+            grupo.appendChild(crearObjetoItem(emoji, fzUnidades));
+        }
+        contenedor.appendChild(grupo);
     }
 }
 
@@ -573,7 +657,27 @@ const seccionesJuego = [
     juegoSumarEscribir, juegoSumarElegir, juegoRestarEscribir
 ];
 
+const RUTAS_JUEGO = new Set([
+    'teclado', 'silabas', 'palabra-imagen', 'imagen-palabra',
+    'contar', 'vincular', 'escribir-numero', 'elegir-numero',
+    'sumar-escribir', 'sumar-elegir', 'restar-escribir', 'aleatorio'
+]);
+
 let modoAleatorio = false;
+let rutaActual = undefined;
+/** Entradas de juego apiladas en esta sesión (para no salir del sitio con history.back). */
+let pilaJuegos = 0;
+
+function leerRutaDesdeHash() {
+    const raw = location.hash.replace(/^#\/?/, '').split(/[?#]/)[0].trim();
+    if (!raw) return null;
+    return RUTAS_JUEGO.has(raw) ? raw : null;
+}
+
+function urlParaRuta(id) {
+    const base = `${location.pathname}${location.search}`;
+    return id ? `${base}#/${id}` : `${base}#/`;
+}
 
 function avanzarDespuesDeAcierto(continuarEnJuego) {
     cancelarAutoSiguiente();
@@ -638,7 +742,7 @@ function mostrarJuego(id) {
     }
 }
 
-function volverMenu() {
+function mostrarMenuUI() {
     cancelarAutoSiguiente();
     modoAleatorio = false;
     cancelarVoz();
@@ -653,13 +757,62 @@ function volverMenu() {
     pantalla.blur();
 }
 
+function aplicarRuta(id) {
+    if (rutaActual === id) return;
+    rutaActual = id;
+
+    if (!id) {
+        mostrarMenuUI();
+        return;
+    }
+    if (id === 'aleatorio') {
+        modoAleatorio = true;
+        mostrarEjercicioAleatorio();
+        return;
+    }
+    mostrarJuego(id);
+}
+
+function irAJuego(id) {
+    if (!RUTAS_JUEGO.has(id)) return;
+    if (leerRutaDesdeHash() === id && rutaActual === id) return;
+    history.pushState({ app: 'juegos', juego: id }, '', urlParaRuta(id));
+    pilaJuegos++;
+    aplicarRuta(id);
+}
+
+function volverMenu() {
+    if (!rutaActual && !leerRutaDesdeHash()) {
+        mostrarMenuUI();
+        return;
+    }
+    if (pilaJuegos > 0) {
+        history.back();
+        return;
+    }
+    history.replaceState({ app: 'juegos', juego: null }, '', urlParaRuta(null));
+    aplicarRuta(null);
+}
+
+function sincronizarRutaDesdeHistorial(state) {
+    let id = null;
+    if (state && state.app === 'juegos') {
+        id = state.juego || null;
+    } else {
+        id = leerRutaDesdeHash();
+    }
+    if (id && !RUTAS_JUEGO.has(id)) id = null;
+    pilaJuegos = id ? 1 : 0;
+    aplicarRuta(id);
+}
+
+window.addEventListener('popstate', (event) => {
+    sincronizarRutaDesdeHistorial(event.state);
+});
+
 document.querySelectorAll('[data-juego]').forEach((btn) => {
     btn.addEventListener('click', () => {
-        if (btn.dataset.juego === 'aleatorio') {
-            entrarModoAleatorio();
-        } else {
-            mostrarJuego(btn.dataset.juego);
-        }
+        irAJuego(btn.dataset.juego);
     });
 });
 document.querySelectorAll('[data-volver]').forEach((btn) => {
@@ -670,6 +823,13 @@ document.querySelectorAll('[data-volver]').forEach((btn) => {
 const pantalla = document.getElementById('pantalla');
 let textoActual = '';
 let longitudTecladoAnterior = 0;
+
+(function iniciarRuta() {
+    const inicial = leerRutaDesdeHash();
+    history.replaceState({ app: 'juegos', juego: inicial }, '', urlParaRuta(inicial));
+    pilaJuegos = 0;
+    aplicarRuta(inicial);
+})();
 
 function filtrarTextoTeclado(texto) {
     return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
@@ -929,9 +1089,12 @@ let colaPI = [];
 let indicePI = 0;
 let bloqueadoPI = false;
 let correctoPI = null;
+let spoilerReveladoPI = false;
 
 const elPIPalabra = document.getElementById('pi-palabra');
 const elPIOpciones = document.getElementById('pi-opciones');
+const elPIOpcionesWrap = document.getElementById('pi-opciones-wrap');
+const elPIRevelar = document.getElementById('pi-revelar');
 const elPIMensaje = document.getElementById('pi-mensaje');
 const elPIContador = document.getElementById('pi-contador');
 const btnPISiguiente = document.getElementById('btn-pi-siguiente');
@@ -940,6 +1103,23 @@ function iniciarPalabraImagen() {
     colaPI = mezclar(PALABRAS.map((_, i) => i));
     indicePI = 0;
     cargarPalabraImagen();
+}
+
+function aplicarCapaSpoilerPI() {
+    if (!elPIOpcionesWrap || !elPIRevelar) return;
+    const ocultar = spoilerImagenes && !spoilerReveladoPI;
+    elPIOpcionesWrap.classList.toggle('con-spoiler', ocultar);
+    elPIRevelar.classList.toggle('oculto', !ocultar);
+}
+
+function sincronizarSpoilerPI() {
+    spoilerReveladoPI = !spoilerImagenes;
+    aplicarCapaSpoilerPI();
+}
+
+function revelarImagenesPI() {
+    spoilerReveladoPI = true;
+    aplicarCapaSpoilerPI();
 }
 
 function renderPalabraConSilabas(contenedor, item) {
@@ -974,6 +1154,7 @@ function renderPalabraConSilabas(contenedor, item) {
 
 function cargarPalabraImagen() {
     bloqueadoPI = false;
+    spoilerReveladoPI = !spoilerImagenes;
     btnPISiguiente.classList.add('oculto');
     elPIMensaje.textContent = '';
     elPIMensaje.className = 'mensaje-quiz';
@@ -992,6 +1173,11 @@ function cargarPalabraImagen() {
         btn.addEventListener('click', () => responderPalabraImagen(idx, btn));
         elPIOpciones.appendChild(btn);
     });
+    aplicarCapaSpoilerPI();
+}
+
+if (elPIRevelar) {
+    elPIRevelar.addEventListener('click', revelarImagenesPI);
 }
 
 function responderPalabraImagen(idx, btn) {
@@ -1428,12 +1614,13 @@ function iniciarElegirNumero() {
     const opciones = numerosDistractores(elObjetivo, 3, 1, max);
 
     elElOpciones.innerHTML = '';
-    opciones.forEach((num, idx) => {
+    opciones.forEach((num) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'opcion-numero';
         btn.textContent = num;
-        btn.addEventListener('click', () => {
+        agregarActivacionTactil(btn, () => {
+            if (btn.disabled || elBloqueado) return;
             sonidoPulsacionNumero(String(num));
             responderElegirNumero(num, btn);
         });
@@ -1610,7 +1797,8 @@ function iniciarSumarElegir() {
         btn.type = 'button';
         btn.className = 'opcion-numero';
         btn.textContent = num;
-        btn.addEventListener('click', () => {
+        agregarActivacionTactil(btn, () => {
+            if (btn.disabled || selBloqueado) return;
             sonidoPulsacionNumero(String(num));
             responderSumarElegir(num, btn);
         });
@@ -1811,6 +1999,5 @@ function mostrarEjercicioAleatorio() {
 }
 
 function entrarModoAleatorio() {
-    modoAleatorio = true;
-    mostrarEjercicioAleatorio();
+    irAJuego('aleatorio');
 }
