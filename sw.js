@@ -1,6 +1,6 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -19,6 +19,7 @@ const PRECACHE_URLS = [
   './fonts/opendyslexic-700.woff2',
   './js/main.js',
   './js/pwa.js',
+  './js/whats-new.js',
   './js/app.js',
   './js/config.js',
   './js/speech.js',

@@ -17,14 +17,23 @@ function despuesDeCancelar(fn, habiaActiva) {
         clearTimeout(timerReproduccion);
         timerReproduccion = null;
     }
-    if (habiaActiva) {
-        timerReproduccion = setTimeout(() => {
-            timerReproduccion = null;
-            fn();
-        }, 100);
+    if (!habiaActiva) {
+        fn();
         return;
     }
-    fn();
+    // Chrome/Android: tras cancel() speaking puede seguir true; esperar y re-cancelar.
+    const intentar = (intento) => {
+        timerReproduccion = setTimeout(() => {
+            timerReproduccion = null;
+            if ((synth.speaking || synth.pending) && intento < 3) {
+                synth.cancel();
+                intentar(intento + 1);
+                return;
+            }
+            fn();
+        }, intento === 0 ? 120 : 160);
+    };
+    intentar(0);
 }
 
 function esLatino(v) {
@@ -135,7 +144,11 @@ function hablarTTS(texto, alTerminar) {
     if (!paraVoz) return;
 
     if (!vozEspanola) cargarVoces();
-    if (synth.paused) synth.resume();
+    try {
+        if (synth.paused) synth.resume();
+    } catch {
+        // ignore
+    }
 
     const utterance = new SpeechSynthesisUtterance(paraVoz);
     utterance.lang = VOZ.idiomaTTS;
@@ -145,8 +158,13 @@ function hablarTTS(texto, alTerminar) {
     }
     utterance.rate = 0.85;
     utterance.pitch = 1.05;
-    if (alTerminar) utterance.onend = alTerminar;
-    synth.speak(utterance);
+    utterance.onend = () => alTerminar?.();
+    utterance.onerror = () => alTerminar?.();
+    try {
+        synth.speak(utterance);
+    } catch {
+        alTerminar?.();
+    }
 }
 
 function reproducirUrl(url, alTerminar) {

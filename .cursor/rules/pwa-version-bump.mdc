@@ -1,19 +1,19 @@
 ---
-description: Al actualizar la app, bumpear buildId PWA en los 3 archivos para forzar update silenciosa
+description: Al actualizar la app, bumpear buildId PWA y escribir el resumen de novedades
 alwaysApply: true
 ---
 
-# PWA: bump de versión al actualizar
+# PWA: bump de versión + cartel de novedades
 
-Esta app es PWA en GitHub Pages con **actualización silenciosa al cargar**. Si cambia código o assets publicados, hay que subir el mismo `buildId` en **tres** sitios (si no, el móvil puede quedarse con cache vieja).
+Esta app es PWA en GitHub Pages con **actualización silenciosa al cargar** y un **cartel de bienvenida** por versión. Si cambia código o assets publicados, hay que subir el mismo `buildId` y el resumen de cambios.
 
 ## Archivos a sincronizar
 
-1. `version.json` → `"buildId": "vN"`
+1. `version.json` → `"buildId": "vN"` + `"title"` + `"changes"` (lista de strings)
 2. `js/pwa.js` → `LOCAL_BUILD_ID = 'vN'`
 3. `sw.js` → `CACHE_VERSION = 'vN'`
 
-Los tres deben coincidir exactamente (ej. `v2`, `v3`, …).
+Los tres `buildId` / versiones deben coincidir exactamente (ej. `v2`, `v3`, …).
 
 ## Cuándo bumpear
 
@@ -23,11 +23,24 @@ Los tres deben coincidir exactamente (ej. `v2`, `v3`, …).
 ## Cómo
 
 1. Leer el `buildId` actual en `version.json`.
-2. Incrementarlo (`v1` → `v2`, etc.).
-3. Actualizar los tres archivos al mismo valor.
-4. Si se agregan assets estáticos nuevos al shell, incluirlos también en `PRECACHE_URLS` de `sw.js`.
+2. Incrementarlo (`v5` → `v6`, etc.).
+3. Actualizar `version.json`, `LOCAL_BUILD_ID` y `CACHE_VERSION` al mismo valor.
+4. En `version.json`, reescribir `changes` con un resumen corto (2–5 bullets) de **esta** versión, en español, claro para padres/niños. Actualizar `title` si hace falta (por defecto `¡Novedades!`).
+5. Si se agregan assets estáticos nuevos al shell, incluirlos en `PRECACHE_URLS` de `sw.js`.
+
+```json
+{
+  "buildId": "v6",
+  "title": "¡Novedades!",
+  "changes": [
+    "Ejemplo de mejora visible",
+    "Otra mejora breve"
+  ]
+}
+```
 
 ```text
 ❌ BAD: deployar js/app.js sin tocar version.json / pwa.js / sw.js
-✅ GOOD: app.js + version.json + LOCAL_BUILD_ID + CACHE_VERSION = mismo vN
+❌ BAD: bumpear buildId sin completar "changes"
+✅ GOOD: mismo vN en los 3 archivos + changes con el resumen real del deploy
 ```

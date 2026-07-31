@@ -227,6 +227,7 @@ function sonidoTriunfoCinco() {
 
 function sonidoIncorrecto() {
     const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sawtooth';
@@ -240,6 +241,13 @@ function sonidoIncorrecto() {
     osc.stop(ctx.currentTime + 0.35);
 }
 
+/** Muestra feedback ok/mal sin dejar ambas clases (mal gana en CSS y dejaba «¡Muy bien!» en rojo). */
+function mostrarFeedback(el, texto, tipo) {
+    el.textContent = texto;
+    el.classList.remove('ok', 'mal');
+    el.classList.add(tipo);
+}
+
 /** Toque fiable en táctil: distingue tap de scroll y evita doble disparo. */
 function agregarActivacionTactil(el, onActivar) {
     const UMBRAL_TOQUE_PX = 12;
@@ -249,6 +257,17 @@ function agregarActivacionTactil(el, onActivar) {
     const distanciaDesdeInicio = (event) => {
         if (!inicio) return 0;
         return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
+    };
+
+    /** Diferir fuera del pointerup: disable/voz en el mismo gesto traban el táctil en móvil. */
+    const disparar = (event) => {
+        const tipo = event?.pointerType || '';
+        const esTactil = tipo === 'touch' || tipo === 'pen' || event?.type?.startsWith('touch');
+        if (esTactil) {
+            setTimeout(() => onActivar(event), 0);
+        } else {
+            onActivar(event);
+        }
     };
 
     const iniciar = (event) => {
@@ -279,7 +298,7 @@ function agregarActivacionTactil(el, onActivar) {
         ignorarClickHasta = Date.now() + 450;
         if (!fueToque) return;
         event.preventDefault();
-        onActivar(event);
+        disparar(event);
     };
 
     if (window.PointerEvent) {
@@ -314,7 +333,7 @@ function agregarActivacionTactil(el, onActivar) {
             ignorarClickHasta = Date.now() + 450;
             if (!fueToque) return;
             event.preventDefault();
-            onActivar(event);
+            disparar(event);
         });
     }
 
@@ -323,7 +342,7 @@ function agregarActivacionTactil(el, onActivar) {
             event.preventDefault();
             return;
         }
-        onActivar(event);
+        disparar(event);
     });
 }
 
@@ -1053,8 +1072,7 @@ function verificar() {
     if (correcto) {
         bloqueado = true;
         elImagen.classList.add('acierto');
-        elMensaje.textContent = '¡Muy bien!';
-        elMensaje.classList.add('ok');
+        mostrarFeedback(elMensaje, MSG_BIEN, 'ok');
         hablar(palabraActual.palabra);
         btnSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
@@ -1062,8 +1080,7 @@ function verificar() {
         renderSilabas();
     } else {
         elImagen.classList.add('error');
-        elMensaje.textContent = MSG_CASI;
-        elMensaje.classList.add('mal');
+        mostrarFeedback(elMensaje, MSG_CASI, 'mal');
         decirErrorOpcion();
         setTimeout(() => elImagen.classList.remove('error'), 400);
         slots = new Array(palabraActual.silabas.length).fill(null);
@@ -1185,8 +1202,7 @@ function responderPalabraImagen(idx, btn) {
     if (idx === correctoPI) {
         bloqueadoPI = true;
         btn.classList.add('correcta');
-        elPIMensaje.textContent = '¡Muy bien!';
-        elPIMensaje.classList.add('ok');
+        mostrarFeedback(elPIMensaje, MSG_BIEN, 'ok');
         hablar(PALABRAS[correctoPI].palabra);
         elPIOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
         btnPISiguiente.classList.remove('oculto');
@@ -1194,8 +1210,7 @@ function responderPalabraImagen(idx, btn) {
         programarAutoSiguiente();
     } else {
         btn.classList.add('incorrecta');
-        elPIMensaje.textContent = MSG_CASI;
-        elPIMensaje.classList.add('mal');
+        mostrarFeedback(elPIMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(PALABRAS[idx].palabra);
         btn.disabled = true;
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
@@ -1261,8 +1276,7 @@ function responderImagenPalabra(idx, btn) {
         bloqueadoIP = true;
         btn.classList.add('correcta');
         elIPImagen.classList.add('acierto');
-        elIPMensaje.textContent = '¡Muy bien!';
-        elIPMensaje.classList.add('ok');
+        mostrarFeedback(elIPMensaje, MSG_BIEN, 'ok');
         hablar(PALABRAS[correctoIP].palabra);
         elIPOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
         btnIPSiguiente.classList.remove('oculto');
@@ -1270,8 +1284,7 @@ function responderImagenPalabra(idx, btn) {
         programarAutoSiguiente();
     } else {
         btn.classList.add('incorrecta');
-        elIPMensaje.textContent = MSG_CASI;
-        elIPMensaje.classList.add('mal');
+        mostrarFeedback(elIPMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(PALABRAS[idx].palabra);
         btn.disabled = true;
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
@@ -1340,8 +1353,7 @@ function verificarContar() {
     if (respuesta === contarCantidad) {
         contarBloqueado = true;
         desactivarEntradaNumerica();
-        elContarMensaje.textContent = MSG_BIEN;
-        elContarMensaje.classList.add('ok');
+        mostrarFeedback(elContarMensaje, MSG_BIEN, 'ok');
         hablarNumero(contarCantidad);
         registrarAciertoMat('contar');
         btnContarSiguiente.classList.remove('oculto');
@@ -1349,8 +1361,7 @@ function verificarContar() {
         programarAutoSiguiente();
     } else {
         sonidoIncorrecto();
-        elContarMensaje.textContent = MSG_CASI;
-        elContarMensaje.classList.add('mal');
+        mostrarFeedback(elContarMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(contarEntrada);
         registrarFalloMat('contar');
         contarEntrada = '';
@@ -1495,8 +1506,7 @@ function intentarVincular() {
         if (ejercicioCompleto) {
             vincularBloqueado = true;
             desactivarTecladoMat();
-            elVincularMensaje.textContent = MSG_BIEN;
-            elVincularMensaje.classList.add('ok');
+            mostrarFeedback(elVincularMensaje, MSG_BIEN, 'ok');
             registrarAciertoMat('vincular');
             btnVincularSiguiente.classList.remove('oculto');
             registrarEjercicioCompletado();
@@ -1504,8 +1514,7 @@ function intentarVincular() {
         }
     } else {
         sonidoIncorrecto();
-        elVincularMensaje.textContent = MSG_CASI;
-        elVincularMensaje.classList.add('mal');
+        mostrarFeedback(elVincularMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(numero);
         registrarFalloMat('vincular');
         vincularEntradaKb = '';
@@ -1564,8 +1573,7 @@ function verificarEscribirNumero() {
     if (respuesta === enObjetivo) {
         enBloqueado = true;
         desactivarEntradaNumerica();
-        elEnMensaje.textContent = MSG_BIEN;
-        elEnMensaje.classList.add('ok');
+        mostrarFeedback(elEnMensaje, MSG_BIEN, 'ok');
         hablarNumero(enObjetivo);
         registrarAciertoMat('escribir-numero');
         btnEnSiguiente.classList.remove('oculto');
@@ -1573,8 +1581,7 @@ function verificarEscribirNumero() {
         programarAutoSiguiente();
     } else {
         sonidoIncorrecto();
-        elEnMensaje.textContent = MSG_CASI;
-        elEnMensaje.classList.add('mal');
+        mostrarFeedback(elEnMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(enEntrada);
         registrarFalloMat('escribir-numero');
         enEntrada = '';
@@ -1653,13 +1660,12 @@ function iniciarElegirNumero() {
 }
 
 function responderElegirNumero(num, btn) {
-    if (elBloqueado) return;
+    if (elBloqueado || btn.disabled) return;
     if (num === elObjetivo) {
         elBloqueado = true;
         desactivarTecladoMat();
         btn.classList.add('correcta');
-        elElMensaje.textContent = MSG_BIEN;
-        elElMensaje.classList.add('ok');
+        mostrarFeedback(elElMensaje, MSG_BIEN, 'ok');
         hablarNumero(elObjetivo);
         registrarAciertoMat('elegir-numero');
         elElOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
@@ -1668,12 +1674,12 @@ function responderElegirNumero(num, btn) {
         programarAutoSiguiente();
     } else {
         btn.classList.add('incorrecta');
-        sonidoIncorrecto();
-        elElMensaje.textContent = MSG_CASI;
-        elElMensaje.classList.add('mal');
-        decirErrorOpcion(num);
-        registrarFalloMat('elegir-numero');
         btn.disabled = true;
+        sonidoIncorrecto();
+        mostrarFeedback(elElMensaje, MSG_CASI, 'mal');
+        registrarFalloMat('elegir-numero');
+        // Diferir TTS: cancelar voz en el mismo toque congela Chrome/Android.
+        setTimeout(() => decirErrorOpcion(num), 180);
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }
 }
@@ -1736,8 +1742,7 @@ function verificarSumarEscribir() {
     if (respuesta === seRonda.suma) {
         seBloqueado = true;
         desactivarEntradaNumerica();
-        elSeMensaje.textContent = MSG_BIEN;
-        elSeMensaje.classList.add('ok');
+        mostrarFeedback(elSeMensaje, MSG_BIEN, 'ok');
         hablarNumero(seRonda.suma);
         registrarAciertoMat('sumar-escribir');
         btnSeSiguiente.classList.remove('oculto');
@@ -1745,8 +1750,7 @@ function verificarSumarEscribir() {
         programarAutoSiguiente();
     } else {
         sonidoIncorrecto();
-        elSeMensaje.textContent = MSG_CASI;
-        elSeMensaje.classList.add('mal');
+        mostrarFeedback(elSeMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(seEntrada);
         registrarFalloMat('sumar-escribir');
         seEntrada = '';
@@ -1829,13 +1833,12 @@ function iniciarSumarElegir() {
 }
 
 function responderSumarElegir(num, btn) {
-    if (selBloqueado || !selRonda) return;
+    if (selBloqueado || !selRonda || btn.disabled) return;
     if (num === selRonda.suma) {
         selBloqueado = true;
         desactivarTecladoMat();
         btn.classList.add('correcta');
-        elSelMensaje.textContent = MSG_BIEN;
-        elSelMensaje.classList.add('ok');
+        mostrarFeedback(elSelMensaje, MSG_BIEN, 'ok');
         hablarNumero(selRonda.suma);
         registrarAciertoMat('sumar-elegir');
         elSelOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
@@ -1844,12 +1847,11 @@ function responderSumarElegir(num, btn) {
         programarAutoSiguiente();
     } else {
         btn.classList.add('incorrecta');
-        sonidoIncorrecto();
-        elSelMensaje.textContent = MSG_CASI;
-        elSelMensaje.classList.add('mal');
-        decirErrorOpcion(num);
-        registrarFalloMat('sumar-elegir');
         btn.disabled = true;
+        sonidoIncorrecto();
+        mostrarFeedback(elSelMensaje, MSG_CASI, 'mal');
+        registrarFalloMat('sumar-elegir');
+        setTimeout(() => decirErrorOpcion(num), 180);
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }
 }
@@ -1917,8 +1919,7 @@ function verificarRestarEscribir() {
     if (respuesta === reRonda.resultado) {
         reBloqueado = true;
         desactivarEntradaNumerica();
-        elReMensaje.textContent = MSG_BIEN;
-        elReMensaje.classList.add('ok');
+        mostrarFeedback(elReMensaje, MSG_BIEN, 'ok');
         actualizarExpresionResta(reRonda, reRonda.resultado);
         hablarNumero(reRonda.resultado);
         registrarAciertoMat('restar-escribir');
@@ -1927,8 +1928,7 @@ function verificarRestarEscribir() {
         programarAutoSiguiente();
     } else {
         sonidoIncorrecto();
-        elReMensaje.textContent = MSG_CASI;
-        elReMensaje.classList.add('mal');
+        mostrarFeedback(elReMensaje, MSG_CASI, 'mal');
         decirErrorOpcion(reEntrada);
         registrarFalloMat('restar-escribir');
         reEntrada = '';

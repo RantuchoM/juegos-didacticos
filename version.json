@@ -1,3 +1,8 @@
 {
-  "buildId": "v4"
+  "buildId": "v6",
+  "title": "¡Novedades!",
+  "changes": [
+    "Cartel de bienvenida con el resumen de cada versión nueva",
+    "La app se actualiza sola al abrirla (PWA)"
+  ]
 }
