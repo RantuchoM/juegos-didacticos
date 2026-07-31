@@ -1,0 +1,33 @@
+---
+description: Al actualizar la app, bumpear buildId PWA en los 3 archivos para forzar update silenciosa
+alwaysApply: true
+---
+
+# PWA: bump de versión al actualizar
+
+Esta app es PWA en GitHub Pages con **actualización silenciosa al cargar**. Si cambia código o assets publicados, hay que subir el mismo `buildId` en **tres** sitios (si no, el móvil puede quedarse con cache vieja).
+
+## Archivos a sincronizar
+
+1. `version.json` → `"buildId": "vN"`
+2. `js/pwa.js` → `LOCAL_BUILD_ID = 'vN'`
+3. `sw.js` → `CACHE_VERSION = 'vN'`
+
+Los tres deben coincidir exactamente (ej. `v2`, `v3`, …).
+
+## Cuándo bumpear
+
+- Antes de dar por terminado un cambio que se va a publicar (HTML, CSS, JS, iconos, audio, manifest, etc.).
+- No hace falta si el cambio es solo docs/reglas locales que no se sirven en Pages.
+
+## Cómo
+
+1. Leer el `buildId` actual en `version.json`.
+2. Incrementarlo (`v1` → `v2`, etc.).
+3. Actualizar los tres archivos al mismo valor.
+4. Si se agregan assets estáticos nuevos al shell, incluirlos también en `PRECACHE_URLS` de `sw.js`.
+
+```text
+❌ BAD: deployar js/app.js sin tocar version.json / pwa.js / sw.js
+✅ GOOD: app.js + version.json + LOCAL_BUILD_ID + CACHE_VERSION = mismo vN
+```

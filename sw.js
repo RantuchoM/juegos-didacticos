@@ -1,7 +1,7 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v3';
-const CACHE_NAME = `teclado-magico-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v4';
+const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   './',

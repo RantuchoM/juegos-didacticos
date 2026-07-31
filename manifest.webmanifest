@@ -1,6 +1,6 @@
 {
-  "name": "Mi Teclado Mágico",
-  "short_name": "Teclado Mágico",
+  "name": "Juegos Didácticos",
+  "short_name": "Juegos",
   "description": "Juegos didácticos de lectura y matemática para niños",
   "lang": "es",
   "start_url": "./index.html",
