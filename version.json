@@ -1,9 +1,9 @@
 {
-  "buildId": "v25",
+  "buildId": "v26",
   "title": "¡Novedades!",
   "changes": [
-    "Voz nueva: mexicana, más natural (se acabó la voz robótica)",
-    "Sigue funcionando en el celular con los audios de la app",
-    "Más latina y clara para palabras, sílabas y números"
+    "Elegir: ya no se tilda al tocar la opción correcta",
+    "El toque responde al toque y después dice el número",
+    "Misma corrección en Suma (elegir)"
   ]
 }

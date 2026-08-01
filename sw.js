@@ -1,6 +1,6 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v25';
+const CACHE_VERSION = 'v26';
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 const TTS_MAX_CHARS = 180;
 

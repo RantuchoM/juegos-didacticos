@@ -152,10 +152,13 @@ function detenerAudio() {
 
 export function cancelarVoz() {
     limpiarTimers();
-    try {
-        synth?.cancel();
-    } catch {
-        // ignore
+    // Solo cancelar synth si hay cola: cancel() en vacío/mismo gesto tilda Android.
+    if (synth && (synth.speaking || synth.pending)) {
+        try {
+            synth.cancel();
+        } catch {
+            // ignore
+        }
     }
     utteranceActual = null;
     detenerAudio();

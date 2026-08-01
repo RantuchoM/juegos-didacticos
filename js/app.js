@@ -330,9 +330,19 @@ function agregarActivacionTactil(el, onActivar) {
         return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
     };
 
-    /** En el mismo gesto del toque (sin setTimeout): si no, Android bloquea speechSynthesis. */
+    /**
+     * En táctil, diferir fuera del pointerup: disable/voz en el mismo gesto
+     * tilda Chrome/Android (Elegir no aceptaba la opción correcta).
+     * El audio de la app ya no necesita el speak síncrono del gesto.
+     */
     const disparar = (event) => {
-        onActivar(event);
+        const tipo = event?.pointerType || '';
+        const esTactil = tipo === 'touch' || tipo === 'pen' || event?.type?.startsWith('touch');
+        if (esTactil) {
+            setTimeout(() => onActivar(event), 0);
+        } else {
+            onActivar(event);
+        }
     };
 
     const iniciar = (event) => {
@@ -2456,17 +2466,20 @@ function iniciarElegirNumero() {
 
 function responderElegirNumero(num, btn) {
     if (elBloqueado || btn.disabled) return;
-    if (num === elObjetivo) {
+    const objetivo = Number(elObjetivo);
+    const elegido = Number(num);
+    if (elegido === objetivo) {
         elBloqueado = true;
         desactivarTecladoMat();
         btn.classList.add('correcta');
         mostrarFeedback(elElMensaje, MSG_BIEN, 'ok');
-        hablarNumero(elObjetivo);
         registrarAciertoMat('elegir-numero');
         elElOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
         btnElSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
         programarAutoSiguiente();
+        // Diferir voz: cancelar/reproducir en el mismo toque tilda Chrome/Android.
+        setTimeout(() => hablarNumero(objetivo), 180);
     } else {
         btn.classList.add('incorrecta');
         btn.disabled = true;
@@ -2474,7 +2487,7 @@ function responderElegirNumero(num, btn) {
         mostrarFeedback(elElMensaje, MSG_CASI, 'mal');
         registrarFalloMat('elegir-numero');
         // Diferir TTS: cancelar voz en el mismo toque congela Chrome/Android.
-        setTimeout(() => decirErrorOpcion(num), 180);
+        setTimeout(() => decirErrorOpcion(elegido), 180);
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }
 }
@@ -2629,24 +2642,26 @@ function iniciarSumarElegir() {
 
 function responderSumarElegir(num, btn) {
     if (selBloqueado || !selRonda || btn.disabled) return;
-    if (num === selRonda.suma) {
+    const suma = Number(selRonda.suma);
+    const elegido = Number(num);
+    if (elegido === suma) {
         selBloqueado = true;
         desactivarTecladoMat();
         btn.classList.add('correcta');
         mostrarFeedback(elSelMensaje, MSG_BIEN, 'ok');
-        hablarNumero(selRonda.suma);
         registrarAciertoMat('sumar-elegir');
         elSelOpciones.querySelectorAll('button').forEach((b) => { b.disabled = true; });
         btnSelSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
         programarAutoSiguiente();
+        setTimeout(() => hablarNumero(suma), 180);
     } else {
         btn.classList.add('incorrecta');
         btn.disabled = true;
         sonidoIncorrecto();
         mostrarFeedback(elSelMensaje, MSG_CASI, 'mal');
         registrarFalloMat('sumar-elegir');
-        setTimeout(() => decirErrorOpcion(num), 180);
+        setTimeout(() => decirErrorOpcion(elegido), 180);
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }
 }
