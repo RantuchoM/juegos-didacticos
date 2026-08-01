@@ -1,9 +1,9 @@
 {
-  "buildId": "v8",
+  "buildId": "v9",
   "title": "¡Novedades!",
   "changes": [
-    "Teclado: la palabra se achica sola para verse entera en la pantalla",
-    "Menú: mayúsculas/minúsculas y lectura fácil (dislexia) también en los nombres de los juegos",
-    "Podés cambiar mayúsculas o minúsculas desde el menú"
+    "Unir en el celular: los 4 grupos se ven juntos en pantalla, sin cortarse",
+    "Teclado: la palabra se achica sola para verse entera",
+    "Menú: mayúsculas/minúsculas y lectura fácil también en los nombres de los juegos"
   ]
 }

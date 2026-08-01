@@ -294,9 +294,19 @@
     flex-shrink: 0;
 }
 
-@media (max-width: 520px) {
+/* Móvil / pantallas angostas: grupos 2×2 a todo el ancho + números abajo */
+@media (max-width: 700px) {
+    #juego-vincular .btn-volver {
+        margin-bottom: 4px;
+        padding: 6px 12px;
+    }
+
     #juego-vincular .quiz-header {
-        margin-bottom: 6px;
+        margin-bottom: 4px;
+    }
+
+    #juego-vincular .vincular-titulo {
+        font-size: clamp(0.8rem, 3.4vw, 0.95rem);
     }
 
     #juego-vincular #vincular-mensaje {
@@ -309,7 +319,7 @@
     }
 
     #juego-vincular .barra-dificultad-juego {
-        padding: 8px 10px;
+        padding: 6px 10px;
         margin-top: 0;
     }
 
@@ -318,32 +328,45 @@
         margin-bottom: 6px;
     }
 
+    #juego-vincular .barra-dificultad-juego .barra-dificultad-rango {
+        font-size: 0.7rem;
+    }
+
     .vincular-layout {
         display: flex;
         flex-direction: column;
         gap: 0;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         flex: 1 1 0;
         min-height: 0;
         overflow: hidden;
+        width: 100%;
+    }
+
+    .vincular-grupos-area,
+    .vincular-numeros-area {
+        width: 100%;
+        max-width: 100%;
     }
 
     .vincular-grupos-area {
         flex: 1 1 0;
         min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
-        padding-bottom: 6px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding-bottom: 4px;
     }
 
     .vincular-numeros-area {
         flex: 0 0 auto;
-        padding-top: 8px;
+        padding-top: 6px;
         border-top: 3px solid #b3e5fc;
-        background: linear-gradient(to bottom, #e0f7fa 70%, #e0f7fa);
+        background: #e0f7fa;
+    }
+
+    body.modo-lectura-facil .vincular-numeros-area {
+        background: #f3efe3;
     }
 
     .vincular-sep {
@@ -351,47 +374,97 @@
     }
 
     .vincular-etiqueta {
-        font-size: 0.95rem;
-        margin-bottom: 8px;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
     }
 
+    /* 4 grupos en 2×2 aprovechando todo el alto/ancho disponible */
     #vincular-objetos {
-        grid-template-columns: 1fr;
-        gap: 10px;
+        flex: 1 1 0;
+        min-height: 0;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .vincular-objetos {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(1.5rem, 1fr));
-        justify-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         align-content: center;
-        min-height: clamp(80px, 22vw, 108px);
-        padding: 12px 14px;
-        gap: 6px;
-        border-width: 7px;
-        border-radius: 20px;
+        align-items: center;
+        min-height: 0;
+        height: 100%;
+        max-height: 100%;
+        padding: 8px;
+        gap: 2px 4px;
+        border-width: 5px;
+        border-radius: 16px;
+        box-shadow: 0 4px 0 #b3e5fc;
         touch-action: manipulation;
+        overflow: hidden;
+    }
+
+    .vincular-objetos.seleccionado {
+        box-shadow: 0 4px 0 #ffb74d;
+    }
+
+    .vincular-objetos.vinculado {
+        box-shadow: 0 4px 0 #a5d6a7;
+    }
+
+    .vincular-objetos .objeto-item {
+        line-height: 1;
     }
 
     #vincular-numeros {
+        width: 100%;
+        display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        gap: 8px;
     }
 
     .vincular-numero {
-        font-size: clamp(1.6rem, 8vw, 2.25rem);
-        min-height: clamp(56px, 14vw, 72px);
-        padding: 14px 6px;
-        border-radius: 20px;
-        box-shadow: 0 7px 0 #fbc02d;
+        font-size: clamp(1.35rem, 6.5vw, 1.9rem);
+        min-height: clamp(44px, 11vw, 56px);
+        padding: 8px 4px;
+        border-radius: 14px;
+        box-shadow: 0 4px 0 #fbc02d;
     }
 
     .vincular-numero.seleccionado {
-        box-shadow: 0 7px 0 #ffca28;
+        box-shadow: 0 4px 0 #ffca28;
     }
 
     .vincular-numero.vinculado {
-        box-shadow: 0 7px 0 #66bb6a;
+        box-shadow: 0 4px 0 #66bb6a;
+    }
+}
+
+/* Pantallas muy bajas: aún más compacto */
+@media (max-width: 700px) and (max-height: 700px) {
+    #vincular-objetos {
+        gap: 6px;
+    }
+
+    .vincular-objetos {
+        padding: 6px;
+        border-width: 4px;
+        border-radius: 14px;
+        box-shadow: 0 3px 0 #b3e5fc;
+    }
+
+    .vincular-numero {
+        min-height: 42px;
+        padding: 6px 4px;
+        font-size: clamp(1.2rem, 5.5vw, 1.6rem);
+    }
+
+    .vincular-etiqueta {
+        font-size: 0.78rem;
+        margin-bottom: 2px;
     }
 }
 

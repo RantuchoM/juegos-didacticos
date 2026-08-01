@@ -518,12 +518,13 @@ function tamanioEmojiPorCantidad(cantidad) {
 }
 
 function tamanioEmojiVincular(cantidad) {
-    const movil = window.matchMedia('(max-width: 520px)').matches;
+    const movil = window.matchMedia('(max-width: 700px)').matches;
     if (movil) {
-        if (cantidad <= 6) return 'clamp(1.15rem, 5.5vw, 1.75rem)';
-        if (cantidad <= 10) return 'clamp(1rem, 4.8vw, 1.45rem)';
-        if (cantidad <= 15) return 'clamp(0.85rem, 4vw, 1.2rem)';
-        return 'clamp(0.72rem, 3.4vw, 1rem)';
+        /* Celdas 2×2: emojis un poco más chicos para que el grupo entre entero */
+        if (cantidad <= 4) return 'clamp(1rem, 4.2vw, 1.45rem)';
+        if (cantidad <= 8) return 'clamp(0.85rem, 3.6vw, 1.2rem)';
+        if (cantidad <= 12) return 'clamp(0.72rem, 3.1vw, 1rem)';
+        return 'clamp(0.6rem, 2.6vw, 0.85rem)';
     }
     if (cantidad <= 6) return 'clamp(0.95rem, 4vh, 1.7rem)';
     if (cantidad <= 10) return 'clamp(0.8rem, 3.4vh, 1.4rem)';
