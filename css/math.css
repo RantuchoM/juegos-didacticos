@@ -86,6 +86,31 @@
     max-height: clamp(100px, 32vh, 220px);
 }
 
+/* Piezas movibles dentro del recuadro (Contar / Sumar / Restar) */
+.objetos-movibles {
+    position: relative;
+}
+
+.objeto-arrastrable {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+    will-change: left, top, transform;
+}
+
+.objeto-arrastrable.objeto-arrastrando {
+    cursor: grabbing;
+    z-index: 10 !important;
+    transform: scale(1.06);
+    filter: drop-shadow(0 4px 8px rgba(2, 136, 209, 0.28));
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.marco-diez.objeto-arrastrable.objeto-arrastrando {
+    transform: scale(1.03);
+}
+
 .objetos-decena {
     background: #e1f5fe;
     border: 3px solid #81d4fa;

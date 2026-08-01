@@ -580,6 +580,8 @@ function crearObjetoItem(emoji, fontSize) {
  * @param {string} [claseAgrupado='objetos-agrupados'] clase al contenedor cuando cantidad > 10
  */
 function renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn, claseAgrupado = 'objetos-agrupados') {
+    contenedor.classList.remove('objetos-movibles');
+    contenedor.style.minHeight = '';
     contenedor.innerHTML = '';
     if (claseAgrupado) {
         contenedor.classList.toggle(claseAgrupado, cantidad > 10);
@@ -621,10 +623,158 @@ function renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn, claseAgr
     }
 }
 
+/** Piezas que el niño puede mover: bloque de 10 completo, o cada unidad suelta. */
+function unidadesArrastreObjetos(container) {
+    const units = [];
+    [...container.children].forEach((child) => {
+        if (child.classList.contains('marco-diez') && !child.classList.contains('objetos-unidades')) {
+            units.push(child);
+        } else if (child.classList.contains('objetos-unidades')) {
+            units.push(...child.querySelectorAll(':scope > .objeto-item'));
+        } else if (child.classList.contains('objeto-item')) {
+            units.push(child);
+        }
+    });
+    return units;
+}
+
+let dragObjetos = null;
+
+function limpiarDragObjetos() {
+    if (!dragObjetos) return;
+    const { el } = dragObjetos;
+    el.classList.remove('objeto-arrastrando');
+    el.style.cursor = '';
+    dragObjetos = null;
+}
+
+function onPointerDownObjeto(event) {
+    if (event.button != null && event.button !== 0) return;
+    const el = event.currentTarget;
+    const container = el.closest('.objetos-movibles');
+    if (!container) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const left = parseFloat(el.style.left) || 0;
+    const top = parseFloat(el.style.top) || 0;
+    dragObjetos = {
+        el,
+        container,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        origLeft: left,
+        origTop: top,
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+        moved: false
+    };
+    el.classList.add('objeto-arrastrando');
+    el.style.cursor = 'grabbing';
+    try {
+        el.setPointerCapture(event.pointerId);
+    } catch (_) {
+        /* ignore */
+    }
+}
+
+function onPointerMoveObjeto(event) {
+    if (!dragObjetos || event.pointerId !== dragObjetos.pointerId) return;
+    const { el, container, startX, startY, origLeft, origTop, width, height } = dragObjetos;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (!dragObjetos.moved && (dx * dx + dy * dy) < 9) return;
+    dragObjetos.moved = true;
+    event.preventDefault();
+
+    const maxL = Math.max(0, container.clientWidth - width);
+    const maxT = Math.max(0, container.clientHeight - height);
+    const left = Math.min(maxL, Math.max(0, origLeft + dx));
+    const top = Math.min(maxT, Math.max(0, origTop + dy));
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+}
+
+function onPointerUpObjeto(event) {
+    if (!dragObjetos || event.pointerId !== dragObjetos.pointerId) return;
+    const { el, pointerId } = dragObjetos;
+    el.classList.remove('objeto-arrastrando');
+    el.style.cursor = '';
+    try {
+        el.releasePointerCapture(pointerId);
+    } catch (_) {
+        /* ignore */
+    }
+    dragObjetos = null;
+}
+
+document.addEventListener('pointermove', onPointerMoveObjeto, true);
+document.addEventListener('pointerup', onPointerUpObjeto, true);
+document.addEventListener('pointercancel', onPointerUpObjeto, true);
+
+/**
+ * Permite mover piezas dentro del recuadro: decenas enteras juntas, unidades una a una.
+ */
+function activarMovimientoObjetos(container) {
+    if (!container || !container.children.length) return;
+
+    limpiarDragObjetos();
+    container.classList.add('objetos-movibles');
+
+    const units = unidadesArrastreObjetos(container);
+    if (!units.length) return;
+
+    const cRect = container.getBoundingClientRect();
+    const style = getComputedStyle(container);
+    const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+    const borderTop = parseFloat(style.borderTopWidth) || 0;
+    const scrollLeft = container.scrollLeft;
+    const scrollTop = container.scrollTop;
+
+    const layouts = units.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+            el,
+            left: r.left - cRect.left - borderLeft + scrollLeft,
+            top: r.top - cRect.top - borderTop + scrollTop,
+            width: r.width,
+            height: r.height
+        };
+    });
+
+    container.style.minHeight = `${Math.max(container.offsetHeight, 72)}px`;
+
+    layouts.forEach(({ el, left, top, width }) => {
+        if (el.parentElement !== container) {
+            container.appendChild(el);
+        }
+        el.classList.add('objeto-arrastrable');
+        el.style.position = 'absolute';
+        el.style.left = `${Math.max(0, left)}px`;
+        el.style.top = `${Math.max(0, top)}px`;
+        el.style.margin = '0';
+        el.style.touchAction = 'none';
+        el.style.cursor = 'grab';
+        el.style.zIndex = '1';
+        if (el.classList.contains('marco-diez')) {
+            el.style.width = `${width}px`;
+            el.style.boxSizing = 'border-box';
+        }
+        el.addEventListener('pointerdown', onPointerDownObjeto);
+    });
+
+    container.querySelectorAll(':scope > .objetos-unidades').forEach((grupo) => {
+        if (!grupo.querySelector('.objeto-item')) grupo.remove();
+    });
+}
+
 function renderObjetos(contenedor, emoji, cantidad) {
     renderObjetosAgrupados(
         contenedor, emoji, cantidad, tamanioEmojiPorCantidad, 'objetos-grid--agrupado'
     );
+    activarMovimientoObjetos(contenedor);
 }
 
 function numerosDistractores(correcto, cantidad, min, max) {
@@ -663,6 +813,8 @@ function renderObjetosEn(contenedor, emoji, cantidad, tamanioFn) {
 function montarPanelSuma(ronda, elObjA, elCantA, elObjB, elCantB) {
     renderObjetosEn(elObjA, ronda.emojiA, ronda.a, tamanioEmojiSuma);
     renderObjetosEn(elObjB, ronda.emojiB, ronda.b, tamanioEmojiSuma);
+    activarMovimientoObjetos(elObjA);
+    activarMovimientoObjetos(elObjB);
     elCantA.textContent = ronda.a;
     elCantB.textContent = ronda.b;
 }
@@ -710,6 +862,8 @@ function montarPanelResta(ronda, elVisual) {
 
     elVisual.appendChild(elFuera);
     elVisual.appendChild(elMarco);
+    activarMovimientoObjetos(elFuera);
+    activarMovimientoObjetos(elMarco);
 }
 
 function hablarResta(total, resta) {

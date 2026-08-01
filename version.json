@@ -1,9 +1,9 @@
 {
-  "buildId": "v23",
+  "buildId": "v24",
   "title": "¡Novedades!",
   "changes": [
-    "Voz con audios propios en la app (ya no depende solo del teléfono)",
-    "Palabras, sílabas y números tienen sonido guardado",
-    "El plan B anterior fallaba porque Google bloqueaba el audio"
+    "En Contar, Sumar y Restar podés mover los dibujos dentro del recuadro",
+    "Los bloques de 10 se mueven todos juntos",
+    "Las unidades se pueden acomodar una por una"
   ]
 }
