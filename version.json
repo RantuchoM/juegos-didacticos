@@ -1,9 +1,9 @@
 {
-  "buildId": "v16",
+  "buildId": "v17",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas: ahora podés arrastrar las piezas a los casilleros",
-    "También sigue funcionando tocar para poner o sacar",
-    "Voz en el celular al tocar, como al principio"
+    "Imagen: las opciones incorrectas se parecen más a la palabra correcta",
+    "Cada palabra del catálogo trae una o dos similares para confundir",
+    "Esas similares no necesitan tener imagen propia"
   ]
 }
