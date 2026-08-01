@@ -1,9 +1,17 @@
 {
+<<<<<<< HEAD
   "buildId": "v19",
   "title": "¡Novedades!",
   "changes": [
     "80 palabras nuevas en el catálogo (mamá, pato, chocolate…)",
     "Imagen: las parecidas ya no son diminutivos (nada de pianito)",
     "Más confusión al leer: palabras distintas que se parecen"
+=======
+  "buildId": "v18",
+  "title": "¡Novedades!",
+  "changes": [
+    "Voz en el celular: restaurada como en las primeras versiones",
+    "Corregido un fallo de Chrome que silenciaba la síntesis en Android"
+>>>>>>> cursor/voz-simple-original-2cfd
   ]
 }

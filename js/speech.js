@@ -5,40 +5,25 @@ const synth = window.speechSynthesis;
 let vozEspanola = null;
 let audioSets = null;
 let audioActual = null;
-let vozListaParaHablar = false;
-
-function esLatino(v) {
-    const lang = v.lang.toLowerCase();
-    const name = v.name.toLowerCase();
-    return lang.startsWith('es') && (
-        lang.includes('mx') || lang.includes('ar') || lang.includes('co') ||
-        lang.includes('419') || lang.includes('us') || lang === 'es-419' ||
-        /paulina|monica|mónica|jorge|diego|mexican|latino|latam|español.*méx|español.*arg/i.test(name)
-    );
-}
-
-function esEspanol(v) {
-    return v.lang.toLowerCase().startsWith('es');
-}
+/** Chrome/Android: si no hay referencia, el GC mata el utterance y no se oye nada. */
+let utteranceActual = null;
 
 /**
- * Como en las primeras versiones: priorizar voces locales es-ES (Sabina/Helena),
- * y recién después latino. Forzar solo es-MX rompe muchos Android.
+ * Selección como en la primera versión que andaba en móvil:
+ * Sabina/Helena local → otra es-ES local → cualquier es local → cualquier es.
  */
 function cargarVoces() {
     if (!synth) return;
     const voces = synth.getVoices();
-    if (!voces || voces.length === 0) return;
-
-    const localEs = (v) => esEspanol(v) && v.localService;
+    if (!voces || !voces.length) return;
+    const es = (v) => v.lang.toLowerCase().startsWith('es');
+    const local = (v) => es(v) && v.localService;
     vozEspanola =
-        voces.find((v) => localEs(v) && /sabina|helena|pablo/i.test(v.name)) ||
-        voces.find((v) => localEs(v) && v.lang.toLowerCase().startsWith('es-es')) ||
-        (VOZ.preferirLatinoTTS ? voces.find((v) => esLatino(v) && v.localService) : null) ||
-        voces.find(localEs) ||
-        (VOZ.preferirLatinoTTS ? voces.find(esLatino) : null) ||
-        voces.find((v) => esEspanol(v) && v.lang.toLowerCase().startsWith('es-es')) ||
-        voces.find(esEspanol) ||
+        voces.find((v) => local(v) && /sabina|helena|pablo/i.test(v.name)) ||
+        voces.find((v) => local(v) && v.lang.toLowerCase().startsWith('es-es')) ||
+        voces.find(local) ||
+        voces.find((v) => es(v) && v.lang.toLowerCase() === 'es-es') ||
+        voces.find(es) ||
         null;
 }
 
@@ -46,48 +31,29 @@ if (synth) {
     synth.onvoiceschanged = cargarVoces;
 }
 
-/**
- * Desbloqueo real en el gesto del usuario (sin cancelar después).
- * En Android, speak() dentro del gesto habilita el TTS para el resto de la sesión.
- */
-function desbloquearVozEnGesto() {
-    if (!synth || vozListaParaHablar) return;
-    vozListaParaHablar = true;
-    cargarVoces();
+/** Solo resume: un speak silencioso + cancel deja muda la voz en muchos Android. */
+function despertarSynth() {
+    if (!synth) return;
     try {
         if (synth.paused) synth.resume();
     } catch {
         // ignore
     }
-    try {
-        const u = new SpeechSynthesisUtterance(' ');
-        u.volume = 0;
-        u.rate = 2;
-        u.lang = vozEspanola?.lang || 'es-ES';
-        if (vozEspanola) u.voice = vozEspanola;
-        synth.speak(u);
-        // No cancelar: cancelar acá deja mudo el motor en varios Android.
-    } catch {
-        // ignore
-    }
 }
 
-function instalarDesbloqueoVoz() {
+function instalarDespertarEnGesto() {
     if (!synth) return;
-    const unlock = () => {
-        desbloquearVozEnGesto();
-        document.removeEventListener('pointerdown', unlock, true);
-        document.removeEventListener('touchstart', unlock, true);
-        document.removeEventListener('click', unlock, true);
+    const wake = () => {
+        despertarSynth();
+        cargarVoces();
     };
-    document.addEventListener('pointerdown', unlock, true);
-    document.addEventListener('touchstart', unlock, true);
-    document.addEventListener('click', unlock, true);
+    document.addEventListener('pointerdown', wake, true);
+    document.addEventListener('touchstart', wake, true);
 }
 
 export async function initVoz() {
     cargarVoces();
-    instalarDesbloqueoVoz();
+    instalarDespertarEnGesto();
     if (!VOZ.usarPersonalizada) return;
 
     try {
@@ -138,78 +104,55 @@ export function cancelarVoz() {
     } catch {
         // ignore
     }
+    utteranceActual = null;
     detenerAudio();
 }
 
 /**
- * Prepara texto para que el TTS lo lea en español como palabra (no deletreo).
+ * Hablar con el mismo patrón que al principio:
+ * cancel + SpeechSynthesisUtterance + lang es-ES + speak (síncrono).
  */
-function textoParaLecturaEspanol(texto) {
-    let t = String(texto).normalize('NFC').trim().replace(/\s+/g, ' ');
-    if (!t) return t;
-    const partes = t.split(' ');
-    if (partes.length > 1 && partes.every((p) => [...p].length === 1)) {
-        t = partes.join('');
-    }
-    return t.toLocaleLowerCase('es');
-}
-
-/** Fonema de una letra (sonido), no el nombre («eme», «hache», «ele»…). */
-function fonemaLetra(letra) {
-    const l = letra.toLocaleLowerCase('es');
-    if (l === 'h') return '';
-    if ('aeiouáéíóúü'.includes(l)) {
-        return l.normalize('NFD').replace(/\p{M}/gu, '');
-    }
-    const alargados = {
-        m: 'mm', n: 'nn', ñ: 'ñ', s: 'ss', f: 'ff', l: 'll', r: 'rr',
-        z: 'ss', j: 'jj', y: 'yy', c: 'cc', p: 'pp', t: 'tt', d: 'dd',
-        b: 'bb', g: 'gg', k: 'kk', q: 'cc', v: 'bb', w: 'uu', x: 'ks'
-    };
-    return alargados[l] || `${l}${l}`;
-}
-
-function hablarTTS(texto, alTerminar) {
-    if (!texto) {
+function hablarNativo(texto, alTerminar, { rate = 0.85, pitch = 1.1 } = {}) {
+    if (!texto || !synth) {
         alTerminar?.();
         return;
     }
-    const paraVoz = textoParaLecturaEspanol(texto);
-    if (!paraVoz) {
-        alTerminar?.();
-        return;
-    }
-    hablarTTSCrudo(paraVoz, alTerminar, 0.85);
-}
-
-/** Habla ya (síncrono). Como las primeras versiones: cancel + speak en el mismo gesto. */
-function hablarTTSCrudo(paraVoz, alTerminar, rate = 0.85) {
-    if (!paraVoz || !synth) {
-        alTerminar?.();
-        return;
-    }
-
     if (!vozEspanola) cargarVoces();
+    despertarSynth();
+
+    // Como la v1: cancelar y hablar al toque, sin setTimeout.
     try {
-        if (synth.paused) synth.resume();
+        synth.cancel();
     } catch {
         // ignore
     }
 
-    const utterance = new SpeechSynthesisUtterance(paraVoz);
-    // es-ES es el que más dispositivos traen; la voz elegida puede cambiar el lang.
-    utterance.lang = vozEspanola?.lang || 'es-ES';
-    if (vozEspanola) utterance.voice = vozEspanola;
-    utterance.rate = rate;
-    utterance.pitch = 1.05;
-    if (alTerminar) {
-        utterance.onend = () => alTerminar();
-        utterance.onerror = () => alTerminar();
+    const utterance = new SpeechSynthesisUtterance(String(texto));
+    utteranceActual = utterance;
+    utterance.lang = 'es-ES';
+    // Solo forzar voice si es local: las de red fallan offline / en varios Android.
+    if (vozEspanola && vozEspanola.localService) {
+        utterance.voice = vozEspanola;
+        utterance.lang = vozEspanola.lang || 'es-ES';
     }
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    const fin = () => {
+        if (utteranceActual === utterance) utteranceActual = null;
+        alTerminar?.();
+    };
+    utterance.onend = fin;
+    utterance.onerror = fin;
     try {
         synth.speak(utterance);
+        // Algunos Android quedan en paused tras cancel(); reanudar ayuda.
+        try {
+            if (synth.paused) synth.resume();
+        } catch {
+            // ignore
+        }
     } catch {
-        alTerminar?.();
+        fin();
     }
 }
 
@@ -230,41 +173,29 @@ function mensajeSlug(texto) {
     return MENSAJE_AUDIO[texto] || slugAudio(texto);
 }
 
-function hablarConAudioOTts(texto, alTerminar, opts = {}) {
-    if (!texto) {
-        alTerminar?.();
-        return;
+/** Texto del teclado: una palabra, sin deletrear. */
+function textoParaLecturaEspanol(texto) {
+    let t = String(texto).normalize('NFC').trim().replace(/\s+/g, ' ');
+    if (!t) return t;
+    const partes = t.split(' ');
+    if (partes.length > 1 && partes.every((p) => [...p].length === 1)) {
+        t = partes.join('');
     }
-    // Igual que al principio: cancelar y hablar al toque, sin delays.
-    cancelarVoz();
-
-    const msg = mensajeSlug(texto);
-    if (tieneAudio('mensajes', msg)) {
-        reproducirUrl(urlAudio('mensajes', msg), alTerminar);
-        return;
-    }
-
-    const palabra = slugAudio(texto);
-    if (tieneAudio('palabras', palabra)) {
-        reproducirUrl(urlAudio('palabras', palabra), alTerminar);
-        return;
-    }
-
-    if (opts.silaba) {
-        const slug = slugAudio(silabaParaVoz(texto));
-        if (tieneAudio('silabas', slug)) {
-            reproducirUrl(urlAudio('silabas', slug), alTerminar);
-            return;
-        }
-        hablarTTSCrudo(silabaParaVoz(texto), alTerminar, 0.78);
-        return;
-    }
-
-    hablarTTS(texto, alTerminar);
+    return t.toLocaleLowerCase('es');
 }
 
-export function hablar(texto, alTerminar) {
-    hablarConAudioOTts(texto, alTerminar);
+function fonemaLetra(letra) {
+    const l = letra.toLocaleLowerCase('es');
+    if (l === 'h') return '';
+    if ('aeiouáéíóúü'.includes(l)) {
+        return l.normalize('NFD').replace(/\p{M}/gu, '');
+    }
+    const alargados = {
+        m: 'mm', n: 'nn', ñ: 'ñ', s: 'ss', f: 'ff', l: 'll', r: 'rr',
+        z: 'ss', j: 'jj', y: 'yy', c: 'cc', p: 'pp', t: 'tt', d: 'dd',
+        b: 'bb', g: 'gg', k: 'kk', q: 'cc', v: 'bb', w: 'uu', x: 'ks'
+    };
+    return alargados[l] || `${l}${l}`;
 }
 
 function silabaParaVoz(texto) {
@@ -273,33 +204,64 @@ function silabaParaVoz(texto) {
     return t.charAt(0).toLocaleUpperCase('es') + t.slice(1).toLocaleLowerCase('es');
 }
 
-export function hablarSilaba(texto, alTerminar) {
-    hablarConAudioOTts(texto, alTerminar, { silaba: true });
+export function hablar(texto, alTerminar) {
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
+
+    const msg = mensajeSlug(texto);
+    if (tieneAudio('mensajes', msg)) {
+        cancelarVoz();
+        reproducirUrl(urlAudio('mensajes', msg), alTerminar);
+        return;
+    }
+
+    const palabra = slugAudio(texto);
+    if (tieneAudio('palabras', palabra)) {
+        cancelarVoz();
+        reproducirUrl(urlAudio('palabras', palabra), alTerminar);
+        return;
+    }
+
+    hablarNativo(texto, alTerminar, { rate: 0.85, pitch: 1.1 });
 }
 
-/**
- * Lee el texto del teclado como palabra(s) en español.
- */
+export function hablarSilaba(texto, alTerminar) {
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
+
+    const slug = slugAudio(silabaParaVoz(texto));
+    if (tieneAudio('silabas', slug)) {
+        cancelarVoz();
+        reproducirUrl(urlAudio('silabas', slug), alTerminar);
+        return;
+    }
+
+    hablarNativo(silabaParaVoz(texto), alTerminar, { rate: 0.78, pitch: 1.05 });
+}
+
 export function hablarCadena(texto) {
     if (!texto) return;
-    cancelarVoz();
-
     const t = textoParaLecturaEspanol(texto);
     if (!t) return;
 
     const slug = slugAudio(t);
     if (tieneAudio('palabras', slug)) {
+        cancelarVoz();
         reproducirUrl(urlAudio('palabras', slug));
         return;
     }
 
     if ([...t].length === 1) {
         const fonema = fonemaLetra(t);
-        if (fonema) hablarTTSCrudo(fonema);
+        if (fonema) hablarNativo(fonema, null, { rate: 0.85, pitch: 1.05 });
         return;
     }
 
-    hablarTTSCrudo(t);
+    hablarNativo(t, null, { rate: 0.85, pitch: 1.05 });
 }
 
 export function hablarNumero(n, alTerminar) {
@@ -307,8 +269,6 @@ export function hablarNumero(n, alTerminar) {
         alTerminar?.();
         return;
     }
-    cancelarVoz();
-
     const num = typeof n === 'string' ? parseInt(n, 10) : n;
     if (!Number.isFinite(num)) {
         alTerminar?.();
@@ -317,11 +277,12 @@ export function hablarNumero(n, alTerminar) {
 
     const key = String(num);
     if (tieneAudio('numeros', key)) {
+        cancelarVoz();
         reproducirUrl(urlAudio('numeros', key), alTerminar);
         return;
     }
 
-    hablarTTS(numeroATextoEspanol(num), alTerminar);
+    hablarNativo(numeroATextoEspanol(num), alTerminar, { rate: 0.85, pitch: 1.1 });
 }
 
 export function hablarNumeroEscrito(texto) {

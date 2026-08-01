@@ -1011,10 +1011,15 @@ function ajustarTamanoFuenteTeclado() {
     pantalla.style.height = 'auto';
 }
 
-/** Espera a que terminen de tipear para leer la palabra formada (no cada letra suelta). */
+/** Lee la palabra formada. En móvil habla al toque (sin delay: si no, Android bloquea el TTS). */
 function programarHablarTeclado() {
     if (!tecladoAutoVoz) return;
     if (tecladoHablarTimer !== null) clearTimeout(tecladoHablarTimer);
+    const movil = (navigator.maxTouchPoints > 0) || window.matchMedia('(pointer: coarse)').matches;
+    if (movil) {
+        if (textoActual) hablarCadena(textoActual);
+        return;
+    }
     tecladoHablarTimer = setTimeout(() => {
         tecladoHablarTimer = null;
         if (textoActual) hablarCadena(textoActual);
@@ -1474,9 +1479,10 @@ function primerSlotLibre() {
 }
 
 function afterColocarSilaba(silaba) {
-    renderSilabas();
     const completo = primerSlotLibre() === -1;
+    // Hablar antes de re-render: más cerca del gesto del toque (móvil).
     hablarSilaba(silaba);
+    renderSilabas();
     if (completo) verificar();
 }
 
