@@ -5,36 +5,7 @@ const synth = window.speechSynthesis;
 let vozEspanola = null;
 let audioSets = null;
 let audioActual = null;
-let finCola = null;
-let timerReproduccion = null;
-
-function habiaReproduccionActiva() {
-    return Boolean(audioActual) || synth.speaking || synth.pending;
-}
-
-function despuesDeCancelar(fn, habiaActiva) {
-    if (timerReproduccion !== null) {
-        clearTimeout(timerReproduccion);
-        timerReproduccion = null;
-    }
-    if (!habiaActiva) {
-        fn();
-        return;
-    }
-    // Chrome/Android: tras cancel() speaking puede seguir true; esperar y re-cancelar.
-    const intentar = (intento) => {
-        timerReproduccion = setTimeout(() => {
-            timerReproduccion = null;
-            if ((synth.speaking || synth.pending) && intento < 3) {
-                synth.cancel();
-                intentar(intento + 1);
-                return;
-            }
-            fn();
-        }, intento === 0 ? 120 : 160);
-    };
-    intentar(0);
-}
+let vozListaParaHablar = false;
 
 function esLatino(v) {
     const lang = v.lang.toLowerCase();
@@ -50,37 +21,61 @@ function esEspanol(v) {
     return v.lang.toLowerCase().startsWith('es');
 }
 
+/**
+ * Como en las primeras versiones: priorizar voces locales es-ES (Sabina/Helena),
+ * y recién después latino. Forzar solo es-MX rompe muchos Android.
+ */
 function cargarVoces() {
+    if (!synth) return;
     const voces = synth.getVoices();
-    if (VOZ.preferirLatinoTTS) {
-        vozEspanola =
-            voces.find((v) => esLatino(v) && v.localService) ||
-            voces.find(esLatino) ||
-            voces.find((v) => esEspanol(v) && v.localService) ||
-            voces.find(esEspanol) ||
-            null;
-    } else {
-        vozEspanola =
-            voces.find((v) => esEspanol(v) && v.localService) ||
-            voces.find(esEspanol) ||
-            null;
+    if (!voces || voces.length === 0) return;
+
+    const localEs = (v) => esEspanol(v) && v.localService;
+    vozEspanola =
+        voces.find((v) => localEs(v) && /sabina|helena|pablo/i.test(v.name)) ||
+        voces.find((v) => localEs(v) && v.lang.toLowerCase().startsWith('es-es')) ||
+        (VOZ.preferirLatinoTTS ? voces.find((v) => esLatino(v) && v.localService) : null) ||
+        voces.find(localEs) ||
+        (VOZ.preferirLatinoTTS ? voces.find(esLatino) : null) ||
+        voces.find((v) => esEspanol(v) && v.lang.toLowerCase().startsWith('es-es')) ||
+        voces.find(esEspanol) ||
+        null;
+}
+
+if (synth) {
+    synth.onvoiceschanged = cargarVoces;
+}
+
+/**
+ * Desbloqueo real en el gesto del usuario (sin cancelar después).
+ * En Android, speak() dentro del gesto habilita el TTS para el resto de la sesión.
+ */
+function desbloquearVozEnGesto() {
+    if (!synth || vozListaParaHablar) return;
+    vozListaParaHablar = true;
+    cargarVoces();
+    try {
+        if (synth.paused) synth.resume();
+    } catch {
+        // ignore
+    }
+    try {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        u.rate = 2;
+        u.lang = vozEspanola?.lang || 'es-ES';
+        if (vozEspanola) u.voice = vozEspanola;
+        synth.speak(u);
+        // No cancelar: cancelar acá deja mudo el motor en varios Android.
+    } catch {
+        // ignore
     }
 }
 
-synth.onvoiceschanged = cargarVoces;
-
-/** Solo resume + carga voces; no hacer speak/cancel (eso rompe el TTS en Android). */
-function instalarDesbloqueoSuave() {
-    let hecho = false;
+function instalarDesbloqueoVoz() {
+    if (!synth) return;
     const unlock = () => {
-        if (hecho) return;
-        hecho = true;
-        try {
-            if (synth.paused) synth.resume();
-        } catch {
-            // ignore
-        }
-        cargarVoces();
+        desbloquearVozEnGesto();
         document.removeEventListener('pointerdown', unlock, true);
         document.removeEventListener('touchstart', unlock, true);
         document.removeEventListener('click', unlock, true);
@@ -92,7 +87,7 @@ function instalarDesbloqueoSuave() {
 
 export async function initVoz() {
     cargarVoces();
-    instalarDesbloqueoSuave();
+    instalarDesbloqueoVoz();
     if (!VOZ.usarPersonalizada) return;
 
     try {
@@ -135,27 +130,24 @@ function detenerAudio() {
         audioActual.onerror = null;
         audioActual = null;
     }
-    finCola = null;
 }
 
 export function cancelarVoz() {
-    if (timerReproduccion !== null) {
-        clearTimeout(timerReproduccion);
-        timerReproduccion = null;
+    try {
+        synth?.cancel();
+    } catch {
+        // ignore
     }
-    synth.cancel();
     detenerAudio();
 }
 
 /**
  * Prepara texto para que el TTS lo lea en español como palabra (no deletreo).
- * Mayúsculas sostenidas y letras separadas por espacios hacen que Chrome/Safari/Sabina deletreen.
  */
 function textoParaLecturaEspanol(texto) {
     let t = String(texto).normalize('NFC').trim().replace(/\s+/g, ' ');
     if (!t) return t;
     const partes = t.split(' ');
-    // "H O L A" / "h o l a" → "hola" (si no, el TTS dice «hache o ele a»)
     if (partes.length > 1 && partes.every((p) => [...p].length === 1)) {
         t = partes.join('');
     }
@@ -178,14 +170,24 @@ function fonemaLetra(letra) {
 }
 
 function hablarTTS(texto, alTerminar) {
-    if (!texto) return;
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
     const paraVoz = textoParaLecturaEspanol(texto);
-    if (!paraVoz) return;
-    hablarTTSCrudo(paraVoz, alTerminar);
+    if (!paraVoz) {
+        alTerminar?.();
+        return;
+    }
+    hablarTTSCrudo(paraVoz, alTerminar, 0.85);
 }
 
-function hablarTTSCrudo(paraVoz, alTerminar) {
-    if (!paraVoz) return;
+/** Habla ya (síncrono). Como las primeras versiones: cancel + speak en el mismo gesto. */
+function hablarTTSCrudo(paraVoz, alTerminar, rate = 0.85) {
+    if (!paraVoz || !synth) {
+        alTerminar?.();
+        return;
+    }
 
     if (!vozEspanola) cargarVoces();
     try {
@@ -195,15 +197,15 @@ function hablarTTSCrudo(paraVoz, alTerminar) {
     }
 
     const utterance = new SpeechSynthesisUtterance(paraVoz);
-    utterance.lang = VOZ.idiomaTTS;
-    if (vozEspanola) {
-        utterance.voice = vozEspanola;
-        utterance.lang = vozEspanola.lang || VOZ.idiomaTTS;
-    }
-    utterance.rate = 0.85;
+    // es-ES es el que más dispositivos traen; la voz elegida puede cambiar el lang.
+    utterance.lang = vozEspanola?.lang || 'es-ES';
+    if (vozEspanola) utterance.voice = vozEspanola;
+    utterance.rate = rate;
     utterance.pitch = 1.05;
-    utterance.onend = () => alTerminar?.();
-    utterance.onerror = () => alTerminar?.();
+    if (alTerminar) {
+        utterance.onend = () => alTerminar();
+        utterance.onerror = () => alTerminar();
+    }
     try {
         synth.speak(utterance);
     } catch {
@@ -228,26 +230,41 @@ function mensajeSlug(texto) {
     return MENSAJE_AUDIO[texto] || slugAudio(texto);
 }
 
-export function hablar(texto, alTerminar) {
-    if (!texto) return;
-    const habiaActiva = habiaReproduccionActiva();
+function hablarConAudioOTts(texto, alTerminar, opts = {}) {
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
+    // Igual que al principio: cancelar y hablar al toque, sin delays.
     cancelarVoz();
 
-    despuesDeCancelar(() => {
-        const msg = mensajeSlug(texto);
-        if (tieneAudio('mensajes', msg)) {
-            reproducirUrl(urlAudio('mensajes', msg), alTerminar);
+    const msg = mensajeSlug(texto);
+    if (tieneAudio('mensajes', msg)) {
+        reproducirUrl(urlAudio('mensajes', msg), alTerminar);
+        return;
+    }
+
+    const palabra = slugAudio(texto);
+    if (tieneAudio('palabras', palabra)) {
+        reproducirUrl(urlAudio('palabras', palabra), alTerminar);
+        return;
+    }
+
+    if (opts.silaba) {
+        const slug = slugAudio(silabaParaVoz(texto));
+        if (tieneAudio('silabas', slug)) {
+            reproducirUrl(urlAudio('silabas', slug), alTerminar);
             return;
         }
+        hablarTTSCrudo(silabaParaVoz(texto), alTerminar, 0.78);
+        return;
+    }
 
-        const palabra = slugAudio(texto);
-        if (tieneAudio('palabras', palabra)) {
-            reproducirUrl(urlAudio('palabras', palabra), alTerminar);
-            return;
-        }
+    hablarTTS(texto, alTerminar);
+}
 
-        hablarTTS(texto, alTerminar);
-    }, habiaActiva);
+export function hablar(texto, alTerminar) {
+    hablarConAudioOTts(texto, alTerminar);
 }
 
 function silabaParaVoz(texto) {
@@ -257,87 +274,54 @@ function silabaParaVoz(texto) {
 }
 
 export function hablarSilaba(texto, alTerminar) {
-    if (!texto) return;
-    const habiaActiva = habiaReproduccionActiva();
-    cancelarVoz();
-
-    despuesDeCancelar(() => {
-        const slug = slugAudio(silabaParaVoz(texto));
-        if (tieneAudio('silabas', slug)) {
-            reproducirUrl(urlAudio('silabas', slug), alTerminar);
-            return;
-        }
-
-        if (!vozEspanola) cargarVoces();
-        try {
-            if (synth.paused) synth.resume();
-        } catch {
-            // ignore
-        }
-        const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
-        utterance.lang = VOZ.idiomaTTS;
-        if (vozEspanola) {
-            utterance.voice = vozEspanola;
-            utterance.lang = vozEspanola.lang || VOZ.idiomaTTS;
-        }
-        utterance.rate = 0.78;
-        utterance.pitch = 1.05;
-        utterance.onend = () => alTerminar?.();
-        utterance.onerror = () => alTerminar?.();
-        try {
-            synth.speak(utterance);
-        } catch {
-            alTerminar?.();
-        }
-    }, habiaActiva);
+    hablarConAudioOTts(texto, alTerminar, { silaba: true });
 }
 
 /**
  * Lee el texto del teclado como palabra(s) en español.
- * No usa nombres de letra («hache», «ele»…): eso sonaba a deletreo de «Hola».
  */
 export function hablarCadena(texto) {
     if (!texto) return;
-    const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
-    despuesDeCancelar(() => {
-        const t = textoParaLecturaEspanol(texto);
-        if (!t) return;
+    const t = textoParaLecturaEspanol(texto);
+    if (!t) return;
 
-        const slug = slugAudio(t);
-        if (tieneAudio('palabras', slug)) {
-            reproducirUrl(urlAudio('palabras', slug));
-            return;
-        }
+    const slug = slugAudio(t);
+    if (tieneAudio('palabras', slug)) {
+        reproducirUrl(urlAudio('palabras', slug));
+        return;
+    }
 
-        if ([...t].length === 1) {
-            const fonema = fonemaLetra(t);
-            if (fonema) hablarTTSCrudo(fonema);
-            return;
-        }
+    if ([...t].length === 1) {
+        const fonema = fonemaLetra(t);
+        if (fonema) hablarTTSCrudo(fonema);
+        return;
+    }
 
-        hablarTTSCrudo(t);
-    }, habiaActiva);
+    hablarTTSCrudo(t);
 }
 
 export function hablarNumero(n, alTerminar) {
-    if (n === undefined || n === null || n === '') return;
-    const habiaActiva = habiaReproduccionActiva();
+    if (n === undefined || n === null || n === '') {
+        alTerminar?.();
+        return;
+    }
     cancelarVoz();
 
-    despuesDeCancelar(() => {
-        const num = typeof n === 'string' ? parseInt(n, 10) : n;
-        if (!Number.isFinite(num)) return;
+    const num = typeof n === 'string' ? parseInt(n, 10) : n;
+    if (!Number.isFinite(num)) {
+        alTerminar?.();
+        return;
+    }
 
-        const key = String(num);
-        if (tieneAudio('numeros', key)) {
-            reproducirUrl(urlAudio('numeros', key), alTerminar);
-            return;
-        }
+    const key = String(num);
+    if (tieneAudio('numeros', key)) {
+        reproducirUrl(urlAudio('numeros', key), alTerminar);
+        return;
+    }
 
-        hablarTTS(numeroATextoEspanol(num), alTerminar);
-    }, habiaActiva);
+    hablarTTS(numeroATextoEspanol(num), alTerminar);
 }
 
 export function hablarNumeroEscrito(texto) {

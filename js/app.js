@@ -329,15 +329,9 @@ function agregarActivacionTactil(el, onActivar) {
         return Math.hypot(event.clientX - inicio.x, event.clientY - inicio.y);
     };
 
-    /** Diferir fuera del pointerup: disable/voz en el mismo gesto traban el táctil en móvil. */
+    /** En el mismo gesto del toque (sin setTimeout): si no, Android bloquea speechSynthesis. */
     const disparar = (event) => {
-        const tipo = event?.pointerType || '';
-        const esTactil = tipo === 'touch' || tipo === 'pen' || event?.type?.startsWith('touch');
-        if (esTactil) {
-            setTimeout(() => onActivar(event), 0);
-        } else {
-            onActivar(event);
-        }
+        onActivar(event);
     };
 
     const iniciar = (event) => {

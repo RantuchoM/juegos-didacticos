@@ -1,8 +1,8 @@
 {
-  "buildId": "v14",
+  "buildId": "v15",
   "title": "¡Novedades!",
   "changes": [
-    "Voz en el celular restaurada (como antes)",
-    "Sílabas: el «¡Muy bien!» sigue apareciendo al completar la palabra"
+    "Voz en el celular: vuelve a funcionar al tocar (como al principio)",
+    "Se habla en el mismo toque, sin demoras que Android bloqueaba"
   ]
 }

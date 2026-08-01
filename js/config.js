@@ -78,8 +78,9 @@ export const VOZ = {
     carpeta: 'audio/latino',
     formato: 'mp3',
     usarPersonalizada: true,
+    // Preferir latino si hay, pero el fallback de speak usa es-ES (más fiable en móviles).
     preferirLatinoTTS: true,
-    idiomaTTS: 'es-MX'
+    idiomaTTS: 'es-ES'
 };
 
 export const MENSAJE_AUDIO = {
