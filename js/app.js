@@ -65,6 +65,9 @@ function aplicarModoLetras() {
         btn.textContent = palabrasMayusculas ? 'a' : 'A';
         btn.title = palabrasMayusculas ? 'Cambiar a minúsculas' : 'Cambiar a mayúsculas';
     });
+    if (typeof ajustarTamanoFuenteTeclado === 'function') {
+        requestAnimationFrame(() => ajustarTamanoFuenteTeclado());
+    }
 }
 
 function alternarModoLetras() {
@@ -80,6 +83,9 @@ function aplicarLecturaFacil() {
         btn.setAttribute('aria-pressed', lecturaFacil ? 'true' : 'false');
         btn.title = lecturaFacil ? 'Desactivar lectura fácil' : 'Activar lectura fácil';
     });
+    if (typeof ajustarTamanoFuenteTeclado === 'function') {
+        requestAnimationFrame(() => ajustarTamanoFuenteTeclado());
+    }
 }
 
 function alternarLecturaFacil() {
@@ -891,10 +897,41 @@ function fuenteMaximaTeclado() {
     const caja = pantallaCaja || pantalla;
     const h = caja.clientHeight || 200;
     const w = caja.clientWidth || 300;
-    return Math.max(TECLADO_FS_MIN, Math.min(120, Math.floor(Math.min(h * 0.5, w * 0.32))));
+    return Math.max(TECLADO_FS_MIN, Math.min(120, Math.floor(Math.min(h * 0.55, w * 0.28))));
 }
 
-/** Achica la fuente para que la palabra completa entre; varias palabras pueden pasar de línea. */
+/** Sondeo oculto: mide el ancho real de una palabra con la tipografía actual. */
+let tecladoProbe = null;
+function asegurarProbeTeclado() {
+    if (tecladoProbe) return tecladoProbe;
+    tecladoProbe = document.createElement('span');
+    tecladoProbe.setAttribute('aria-hidden', 'true');
+    tecladoProbe.style.cssText = [
+        'position:absolute',
+        'visibility:hidden',
+        'left:-9999px',
+        'top:0',
+        'white-space:nowrap',
+        'pointer-events:none'
+    ].join(';');
+    document.body.appendChild(tecladoProbe);
+    return tecladoProbe;
+}
+
+function medirAnchoTextoTeclado(texto, fontSizePx) {
+    const probe = asegurarProbeTeclado();
+    const cs = getComputedStyle(pantalla);
+    probe.style.fontFamily = cs.fontFamily;
+    probe.style.fontWeight = cs.fontWeight;
+    probe.style.fontSize = `${fontSizePx}px`;
+    probe.style.letterSpacing = cs.letterSpacing;
+    probe.style.wordSpacing = cs.wordSpacing;
+    probe.style.textTransform = cs.textTransform;
+    probe.textContent = texto || 'M';
+    return probe.getBoundingClientRect().width;
+}
+
+/** Achica la fuente para que cada palabra entre entera en el ancho; varias palabras pueden pasar de línea. */
 function ajustarTamanoFuenteTeclado() {
     if (!pantalla || !pantallaCaja) return;
     if (juegoTeclado.classList.contains('oculto')) return;
@@ -902,12 +939,22 @@ function ajustarTamanoFuenteTeclado() {
     const availH = Math.max(1, pantallaCaja.clientHeight - 8);
     const availW = Math.max(1, pantallaCaja.clientWidth - 8);
     const maxFs = fuenteMaximaTeclado();
+    const palabras = textoActual.trim().split(/\s+/).filter(Boolean);
+    const unaLinea = palabras.length <= 1;
+
+    pantalla.style.whiteSpace = unaLinea ? 'nowrap' : 'pre-wrap';
+    pantalla.style.overflowWrap = 'normal';
+    pantalla.style.wordBreak = 'keep-all';
 
     if (!textoActual) {
         pantalla.style.fontSize = `${maxFs}px`;
         pantalla.style.height = 'auto';
         return;
     }
+
+    const textoMedir = unaLinea
+        ? (textoActual || 'M')
+        : palabras.reduce((a, b) => (a.length >= b.length ? a : b), 'M');
 
     let lo = TECLADO_FS_MIN;
     let hi = maxFs;
@@ -917,9 +964,14 @@ function ajustarTamanoFuenteTeclado() {
         pantalla.style.fontSize = `${mid}px`;
         pantalla.style.height = 'auto';
         void pantalla.offsetHeight;
-        const cabe = pantalla.scrollHeight <= availH + 2
-            && pantalla.scrollWidth <= availW + 2;
-        if (cabe) {
+
+        const anchoPalabra = medirAnchoTextoTeclado(textoMedir, mid);
+        const cabeAncho = anchoPalabra <= availW + 1;
+        const cabeAlto = unaLinea
+            ? true
+            : pantalla.scrollHeight <= availH + 2;
+
+        if (cabeAncho && cabeAlto) {
             best = mid;
             lo = mid + 1;
         } else {

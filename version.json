@@ -1,9 +1,9 @@
 {
-  "buildId": "v7",
+  "buildId": "v8",
   "title": "¡Novedades!",
   "changes": [
-    "Teclado: lee la palabra formada (hola), no letra por letra (hache o ele a)",
-    "Mensajes «¡Muy bien!» otra vez en verde después de un «¡Casi!»",
-    "Mejor actualización de la app en el teléfono"
+    "Teclado: la palabra se achica sola para verse entera en la pantalla",
+    "Menú: mayúsculas/minúsculas y lectura fácil (dislexia) también en los nombres de los juegos",
+    "Podés cambiar mayúsculas o minúsculas desde el menú"
   ]
 }

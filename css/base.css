@@ -64,6 +64,16 @@
 
 * { box-sizing: border-box; }
 
+/* Heredar tipografía (Lexend / OpenDyslexic) también en botones e inputs */
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+}
+
 html {
     height: 100%;
     overflow: hidden;
@@ -134,6 +144,8 @@ body.modo-lectura-facil .slot-silaba,
 body.modo-lectura-facil .opcion-palabra,
 body.modo-lectura-facil .silaba-click,
 body.modo-lectura-facil .btn-juego,
+body.modo-lectura-facil .menu-seccion,
+body.modo-lectura-facil #menu h1,
 body.modo-lectura-facil .tecla-num,
 body.modo-lectura-facil .opcion-numero,
 body.modo-lectura-facil .vincular-numero,

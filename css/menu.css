@@ -267,6 +267,9 @@
     color: #5d4037;
     cursor: pointer;
     font-family: inherit;
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-transform: none;
     line-height: 1;
     display: inline-flex;
     align-items: center;
@@ -362,7 +365,10 @@ body.modo-mayusculas .slot-silaba,
 body.modo-mayusculas .ficha-silaba,
 body.modo-mayusculas .palabra-grande,
 body.modo-mayusculas .opcion-palabra,
-body.modo-mayusculas .silaba-click {
+body.modo-mayusculas .silaba-click,
+body.modo-mayusculas #menu h1,
+body.modo-mayusculas .menu-seccion,
+body.modo-mayusculas .btn-juego {
     text-transform: uppercase;
 }
 
@@ -371,6 +377,9 @@ body.modo-minusculas .slot-silaba,
 body.modo-minusculas .ficha-silaba,
 body.modo-minusculas .palabra-grande,
 body.modo-minusculas .opcion-palabra,
-body.modo-minusculas .silaba-click {
+body.modo-minusculas .silaba-click,
+body.modo-minusculas #menu h1,
+body.modo-minusculas .menu-seccion,
+body.modo-minusculas .btn-juego {
     text-transform: lowercase;
 }
