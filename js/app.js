@@ -1259,7 +1259,9 @@ function ponerEnSlot(fichaId) {
     fichas.find((f) => f.id === fichaId).usada = true;
     renderSilabas();
     const completo = primerSlotLibre() === -1;
-    hablarSilaba(silaba, completo ? verificar : null);
+    // La voz no debe bloquear el OK: en móvil el TTS a veces no dispara onend.
+    hablarSilaba(silaba);
+    if (completo) verificar();
 }
 
 function quitarDeSlot(slotIdx) {

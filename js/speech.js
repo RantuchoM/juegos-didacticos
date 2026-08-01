@@ -7,11 +7,16 @@ let audioSets = null;
 let audioActual = null;
 let finCola = null;
 let timerReproduccion = null;
+let vozDesbloqueada = false;
 
 function habiaReproduccionActiva() {
-    return Boolean(audioActual) || synth.speaking || synth.pending;
+    return Boolean(audioActual) || Boolean(synth && (synth.speaking || synth.pending));
 }
 
+/**
+ * En móvil, delays largos tras cancel() rompen speechSynthesis (se pierde el gesto).
+ * Cancelamos y seguimos en el mismo frame / rAF corto.
+ */
 function despuesDeCancelar(fn, habiaActiva) {
     if (timerReproduccion !== null) {
         clearTimeout(timerReproduccion);
@@ -21,19 +26,42 @@ function despuesDeCancelar(fn, habiaActiva) {
         fn();
         return;
     }
-    // Chrome/Android: tras cancel() speaking puede seguir true; esperar y re-cancelar.
-    const intentar = (intento) => {
-        timerReproduccion = setTimeout(() => {
-            timerReproduccion = null;
-            if ((synth.speaking || synth.pending) && intento < 3) {
-                synth.cancel();
-                intentar(intento + 1);
-                return;
-            }
-            fn();
-        }, intento === 0 ? 120 : 160);
+    try {
+        synth.cancel();
+    } catch {
+        // ignore
+    }
+    // Un frame mantiene mejor el gesto del usuario que timeouts de 120–300 ms.
+    requestAnimationFrame(() => {
+        try {
+            if (synth.paused) synth.resume();
+        } catch {
+            // ignore
+        }
+        fn();
+    });
+}
+
+/** Garantiza que el callback de fin se llame una sola vez (onend, onerror o timeout). */
+function conFinSeguro(alTerminar, ms = 5000) {
+    if (!alTerminar) return () => {};
+    let hecho = false;
+    let timerLocal = null;
+    const done = () => {
+        if (hecho) return;
+        hecho = true;
+        if (timerLocal !== null) {
+            clearTimeout(timerLocal);
+            timerLocal = null;
+        }
+        try {
+            alTerminar();
+        } catch {
+            // ignore
+        }
     };
-    intentar(0);
+    timerLocal = setTimeout(done, ms);
+    return done;
 }
 
 function esLatino(v) {
@@ -51,7 +79,9 @@ function esEspanol(v) {
 }
 
 function cargarVoces() {
+    if (!synth) return;
     const voces = synth.getVoices();
+    if (!voces || voces.length === 0) return;
     if (VOZ.preferirLatinoTTS) {
         vozEspanola =
             voces.find((v) => esLatino(v) && v.localService) ||
@@ -67,10 +97,48 @@ function cargarVoces() {
     }
 }
 
-synth.onvoiceschanged = cargarVoces;
+function desbloquearVoz() {
+    if (vozDesbloqueada || !synth) return;
+    vozDesbloqueada = true;
+    try {
+        if (synth.paused) synth.resume();
+    } catch {
+        // ignore
+    }
+    cargarVoces();
+    // Algunos Android/iOS no hablan hasta un speak() dentro de un gesto.
+    try {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        u.rate = 2;
+        u.lang = VOZ.idiomaTTS;
+        synth.speak(u);
+        synth.cancel();
+    } catch {
+        // ignore
+    }
+}
+
+function instalarDesbloqueoVoz() {
+    if (!synth) return;
+    const unlock = () => {
+        desbloquearVoz();
+        document.removeEventListener('pointerdown', unlock, true);
+        document.removeEventListener('touchstart', unlock, true);
+        document.removeEventListener('click', unlock, true);
+    };
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('touchstart', unlock, true);
+    document.addEventListener('click', unlock, true);
+}
+
+if (synth) {
+    synth.onvoiceschanged = cargarVoces;
+}
 
 export async function initVoz() {
     cargarVoces();
+    instalarDesbloqueoVoz();
     if (!VOZ.usarPersonalizada) return;
 
     try {
@@ -121,7 +189,11 @@ export function cancelarVoz() {
         clearTimeout(timerReproduccion);
         timerReproduccion = null;
     }
-    synth.cancel();
+    try {
+        synth?.cancel();
+    } catch {
+        // ignore
+    }
     detenerAudio();
 }
 
@@ -156,15 +228,29 @@ function fonemaLetra(letra) {
 }
 
 function hablarTTS(texto, alTerminar) {
-    if (!texto) return;
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
     const paraVoz = textoParaLecturaEspanol(texto);
-    if (!paraVoz) return;
+    if (!paraVoz) {
+        alTerminar?.();
+        return;
+    }
     hablarTTSCrudo(paraVoz, alTerminar);
 }
 
 function hablarTTSCrudo(paraVoz, alTerminar) {
-    if (!paraVoz) return;
+    if (!paraVoz) {
+        alTerminar?.();
+        return;
+    }
+    if (!synth) {
+        alTerminar?.();
+        return;
+    }
 
+    desbloquearVoz();
     if (!vozEspanola) cargarVoces();
     try {
         if (synth.paused) synth.resume();
@@ -172,6 +258,7 @@ function hablarTTSCrudo(paraVoz, alTerminar) {
         // ignore
     }
 
+    const fin = conFinSeguro(alTerminar);
     const utterance = new SpeechSynthesisUtterance(paraVoz);
     utterance.lang = VOZ.idiomaTTS;
     if (vozEspanola) {
@@ -180,12 +267,12 @@ function hablarTTSCrudo(paraVoz, alTerminar) {
     }
     utterance.rate = 0.85;
     utterance.pitch = 1.05;
-    utterance.onend = () => alTerminar?.();
-    utterance.onerror = () => alTerminar?.();
+    utterance.onend = fin;
+    utterance.onerror = fin;
     try {
         synth.speak(utterance);
     } catch {
-        alTerminar?.();
+        fin();
     }
 }
 
@@ -193,9 +280,10 @@ function reproducirUrl(url, alTerminar) {
     detenerAudio();
     const audio = new Audio(url);
     audioActual = audio;
+    const fin = conFinSeguro(alTerminar);
     const terminar = () => {
         if (audioActual === audio) audioActual = null;
-        alTerminar?.();
+        fin();
     };
     audio.onended = terminar;
     audio.onerror = terminar;
@@ -207,7 +295,10 @@ function mensajeSlug(texto) {
 }
 
 export function hablar(texto, alTerminar) {
-    if (!texto) return;
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
     const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
@@ -231,11 +322,15 @@ export function hablar(texto, alTerminar) {
 function silabaParaVoz(texto) {
     const t = texto.trim();
     if (!t) return t;
-    return t.charAt(0).toLocaleUpperCase('es') + t.slice(1).toLocaleLowerCase('es');
+    // Minúsculas: en varios TTS móviles las mayúsculas suenan mal o fallan.
+    return t.toLocaleLowerCase('es');
 }
 
 export function hablarSilaba(texto, alTerminar) {
-    if (!texto) return;
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
     const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
@@ -246,17 +341,7 @@ export function hablarSilaba(texto, alTerminar) {
             return;
         }
 
-        if (synth.paused) synth.resume();
-        const utterance = new SpeechSynthesisUtterance(silabaParaVoz(texto));
-        utterance.lang = VOZ.idiomaTTS;
-        if (vozEspanola) {
-            utterance.voice = vozEspanola;
-            utterance.lang = vozEspanola.lang || VOZ.idiomaTTS;
-        }
-        utterance.rate = 0.78;
-        utterance.pitch = 1.05;
-        if (alTerminar) utterance.onend = alTerminar;
-        synth.speak(utterance);
+        hablarTTSCrudo(silabaParaVoz(texto), alTerminar);
     }, habiaActiva);
 }
 
@@ -290,13 +375,19 @@ export function hablarCadena(texto) {
 }
 
 export function hablarNumero(n, alTerminar) {
-    if (n === undefined || n === null || n === '') return;
+    if (n === undefined || n === null || n === '') {
+        alTerminar?.();
+        return;
+    }
     const habiaActiva = habiaReproduccionActiva();
     cancelarVoz();
 
     despuesDeCancelar(() => {
         const num = typeof n === 'string' ? parseInt(n, 10) : n;
-        if (!Number.isFinite(num)) return;
+        if (!Number.isFinite(num)) {
+            alTerminar?.();
+            return;
+        }
 
         const key = String(num);
         if (tieneAudio('numeros', key)) {
