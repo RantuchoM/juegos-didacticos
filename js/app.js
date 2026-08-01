@@ -13,7 +13,7 @@ import {
 import { numeroATextoEspanol } from './numeros-es.js';
 import {
     hablar, hablarSilaba, hablarCadena, hablarNumero, hablarNumeroEscrito,
-    decirErrorOpcion, cancelarVoz
+    hablarOperacion, decirErrorOpcion, cancelarVoz
 } from './speech.js';
 
 let ejerciciosCompletados = 0;
@@ -668,7 +668,7 @@ function montarPanelSuma(ronda, elObjA, elCantA, elObjB, elCantB) {
 }
 
 function hablarSuma(a, b) {
-    hablar(`${numeroATextoEspanol(a)} más ${numeroATextoEspanol(b)}`);
+    hablarOperacion(a, 'mas', b);
 }
 
 function tamanioEmojiResta(cantidad) {
@@ -713,7 +713,7 @@ function montarPanelResta(ronda, elVisual) {
 }
 
 function hablarResta(total, resta) {
-    hablar(`${numeroATextoEspanol(total)} menos ${numeroATextoEspanol(resta)}`);
+    hablarOperacion(total, 'menos', resta);
 }
 
 // --- Navegación ---

@@ -1,7 +1,8 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v22';
+const CACHE_VERSION = 'v23';
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
+const TTS_MAX_CHARS = 180;
 
 const PRECACHE_URLS = [
   './',
@@ -68,8 +69,40 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Proxy TTS: el navegador manda Referer y Google responde 404;
+  // desde el SW pedimos sin referrer y devolvemos el MP3 same-origin.
+  if (url.pathname.endsWith('/tts')) {
+    event.respondWith(proxyTts(url));
+    return;
+  }
+
   event.respondWith(networkFirst(request));
 });
+
+async function proxyTts(pageUrl) {
+  const texto = String(pageUrl.searchParams.get('q') || '')
+    .trim()
+    .slice(0, TTS_MAX_CHARS);
+  if (!texto) {
+    return new Response('Falta texto', { status: 400 });
+  }
+
+  const ttsUrl =
+    'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es&q=' +
+    encodeURIComponent(texto);
+
+  try {
+    // no-cors: Google no manda ACAO; devolvemos la respuesta opaca al <audio>.
+    return await fetch(ttsUrl, {
+      referrerPolicy: 'no-referrer',
+      credentials: 'omit',
+      mode: 'no-cors',
+      cache: 'force-cache',
+    });
+  } catch {
+    return new Response('Sin red para TTS', { status: 503 });
+  }
+}
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);

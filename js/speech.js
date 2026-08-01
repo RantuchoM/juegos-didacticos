@@ -156,16 +156,27 @@ export function cancelarVoz() {
     detenerAudio();
 }
 
-function urlTtsRed(texto) {
+/** Proxy same-origin (SW pide a Google sin Referer). */
+function urlTtsProxy(texto) {
     const q = encodeURIComponent(String(texto).slice(0, MAX_CHARS_TTS_RED));
-    // client=gtx suele responder bien desde <audio> en móviles.
+    return new URL(`tts?q=${q}`, window.location.href).href;
+}
+
+/** Directo a Google: hace falta referrerPolicy=no-referrer o Google responde 404. */
+function urlTtsGoogle(texto) {
+    const q = encodeURIComponent(String(texto).slice(0, MAX_CHARS_TTS_RED));
     return `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es&q=${q}`;
 }
 
 function reproducirUrl(url, alTerminar) {
     detenerAudio();
     desbloquearAudio();
-    const audio = new Audio(url);
+    const audio = new Audio();
+    try {
+        audio.referrerPolicy = 'no-referrer';
+    } catch {
+        // ignore
+    }
     audioActual = audio;
     const terminar = () => {
         if (audioActual === audio) audioActual = null;
@@ -173,10 +184,83 @@ function reproducirUrl(url, alTerminar) {
     };
     audio.onended = terminar;
     audio.onerror = terminar;
+    audio.src = url;
     const playPromise = audio.play();
     if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(terminar);
     }
+}
+
+/** Prueba varias URLs hasta que una reproduzca (onerror → siguiente). */
+function reproducirUrlConFallback(urls, alTerminar) {
+    const lista = urls.filter(Boolean);
+    if (!lista.length) {
+        alTerminar?.();
+        return;
+    }
+    let i = 0;
+    const intentar = () => {
+        if (i >= lista.length) {
+            alTerminar?.();
+            return;
+        }
+        const url = lista[i++];
+        detenerAudio();
+        desbloquearAudio();
+        const audio = new Audio();
+        try {
+            audio.referrerPolicy = 'no-referrer';
+        } catch {
+            // ignore
+        }
+        audioActual = audio;
+        let arranco = false;
+        const finOk = () => {
+            if (audioActual === audio) audioActual = null;
+            alTerminar?.();
+        };
+        audio.onplaying = () => {
+            arranco = true;
+        };
+        audio.onended = finOk;
+        audio.onerror = () => {
+            if (audioActual === audio) audioActual = null;
+            intentar();
+        };
+        audio.src = url;
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {
+                if (!arranco) intentar();
+            });
+        }
+    };
+    intentar();
+}
+
+function reproducirSecuencia(urls, alTerminar) {
+    detenerAudio();
+    desbloquearAudio();
+    let i = 0;
+    const siguiente = () => {
+        if (i >= urls.length) {
+            audioActual = null;
+            alTerminar?.();
+            return;
+        }
+        const audio = new Audio();
+        try {
+            audio.referrerPolicy = 'no-referrer';
+        } catch {
+            // ignore
+        }
+        audioActual = audio;
+        audio.onended = siguiente;
+        audio.onerror = siguiente;
+        audio.src = urls[i++];
+        audio.play().catch(siguiente);
+    };
+    siguiente();
 }
 
 function hablarPorAudioRed(texto, alTerminar) {
@@ -191,7 +275,24 @@ function hablarPorAudioRed(texto, alTerminar) {
         // ignore
     }
     utteranceActual = null;
-    reproducirUrl(urlTtsRed(texto), alTerminar);
+    // 1) Google directo sin Referer  2) proxy del SW
+    reproducirUrlConFallback([urlTtsGoogle(texto), urlTtsProxy(texto)], alTerminar);
+}
+
+/** Suma/resta con MP3 locales encadenados cuando existen. */
+export function hablarOperacion(a, tipo, b, alTerminar) {
+    const opSlug = tipo === 'menos' ? 'menos' : 'mas';
+    const urls = [];
+    if (tieneAudio('numeros', String(a))) urls.push(urlAudio('numeros', String(a)));
+    if (tieneAudio('palabras', opSlug)) urls.push(urlAudio('palabras', opSlug));
+    if (tieneAudio('numeros', String(b))) urls.push(urlAudio('numeros', String(b)));
+    if (urls.length === 3) {
+        cancelarVoz();
+        reproducirSecuencia(urls, alTerminar);
+        return;
+    }
+    const op = tipo === 'menos' ? 'menos' : 'más';
+    hablar(`${numeroATextoEspanol(a)} ${op} ${numeroATextoEspanol(b)}`, alTerminar);
 }
 
 /**
