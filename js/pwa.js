@@ -7,11 +7,7 @@ const RELOAD_GUARD_WINDOW_MS = 15_000;
 const RELOAD_GUARD_MAX = 2;
 const RELOAD_FALLBACK_MS = 2500;
 const VERSION_POLL_MS = 2 * 60 * 1000;
-<<<<<<< HEAD
-const LOCAL_BUILD_ID = 'v21';
-=======
-const LOCAL_BUILD_ID = 'v20';
->>>>>>> cursor/unir-drag-nombre-juego-9c4c
+const LOCAL_BUILD_ID = 'v22';
 
 function readReloadGuard() {
   try {
