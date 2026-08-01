@@ -1,9 +1,8 @@
 {
-  "buildId": "v10",
+  "buildId": "v11",
   "title": "¡Novedades!",
   "changes": [
-    "Menú: solo dice Lectura y Matemática (sin «de más fácil a más difícil»)",
-    "Botones − y + en los encabezados para achicar o agrandar el texto",
-    "El tamaño elegido se guarda para la próxima vez"
+    "Palabra: el spoiler ya no se mueve; es un velo fijo semitransparente",
+    "Menú más corto y botones −/+ para el tamaño del texto"
   ]
 }

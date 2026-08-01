@@ -7,7 +7,7 @@ const RELOAD_GUARD_WINDOW_MS = 15_000;
 const RELOAD_GUARD_MAX = 2;
 const RELOAD_FALLBACK_MS = 2500;
 const VERSION_POLL_MS = 2 * 60 * 1000;
-const LOCAL_BUILD_ID = 'v10';
+const LOCAL_BUILD_ID = 'v11';
 
 function readReloadGuard() {
   try {
