@@ -43,10 +43,11 @@ Juegos didácticos de lectura y matemática para niños. Sitio estático listo p
 Edita `js/data/palabras.js`. Cada entrada tiene esta forma:
 
 ```javascript
-{ palabra: 'perro', silabas: ['pe', 'rro'], emoji: '🐶' }
+{ palabra: 'perro', silabas: ['pe', 'rro'], emoji: '🐶', similares: ['pero', 'cerro'] }
 ```
 
-También puedes usar `svg` en lugar de `emoji` para dibujos vectoriales (ver la palabra «mesa»).
+- `similares` — 1 o 2 palabras parecidas para confundir en el juego **Imagen** (no necesitan imagen ni estar en el catálogo).
+- También puedes usar `svg` en lugar de `emoji` para dibujos vectoriales (ver la palabra «mesa»).
 
 ### Cambiar niveles de dificultad
 

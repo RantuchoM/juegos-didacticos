@@ -1178,6 +1178,33 @@ function indicesOpciones(correctoIdx, cantidad = 3) {
     return mezclar(indices);
 }
 
+/** Opciones de texto para Imagen→Palabra: correcta + similares (pueden no tener imagen). */
+function opcionesImagenPalabra(correctoIdx, cantidad = 3) {
+    const correcto = PALABRAS[correctoIdx];
+    const usadas = new Set([correcto.palabra.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()]);
+    const opciones = [{ palabra: correcto.palabra, correcta: true }];
+
+    for (const s of correcto.similares || []) {
+        if (opciones.length >= cantidad) break;
+        const key = s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+        if (usadas.has(key)) continue;
+        usadas.add(key);
+        opciones.push({ palabra: s, correcta: false });
+    }
+
+    while (opciones.length < cantidad) {
+        const r = Math.floor(Math.random() * PALABRAS.length);
+        if (r === correctoIdx) continue;
+        const p = PALABRAS[r].palabra;
+        const key = p.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+        if (usadas.has(key)) continue;
+        usadas.add(key);
+        opciones.push({ palabra: p, correcta: false });
+    }
+
+    return mezclar(opciones);
+}
+
 let colaPalabras = [];
 let indiceActual = 0;
 let palabraActual = null;
@@ -1699,19 +1726,19 @@ function cargarImagenPalabra() {
     renderImagenEn(elIPImagen, item);
 
     elIPOpciones.innerHTML = '';
-    indicesOpciones(correctoIP).forEach((idx) => {
+    opcionesImagenPalabra(correctoIP).forEach((opcion) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'opcion-palabra';
-        btn.textContent = PALABRAS[idx].palabra;
-        btn.addEventListener('click', () => responderImagenPalabra(idx, btn));
+        btn.textContent = opcion.palabra;
+        btn.addEventListener('click', () => responderImagenPalabra(opcion, btn));
         elIPOpciones.appendChild(btn);
     });
 }
 
-function responderImagenPalabra(idx, btn) {
+function responderImagenPalabra(opcion, btn) {
     if (bloqueadoIP) return;
-    if (idx === correctoIP) {
+    if (opcion.correcta) {
         bloqueadoIP = true;
         btn.classList.add('correcta');
         elIPImagen.classList.add('acierto');
@@ -1724,7 +1751,7 @@ function responderImagenPalabra(idx, btn) {
     } else {
         btn.classList.add('incorrecta');
         mostrarFeedback(elIPMensaje, MSG_CASI, 'mal');
-        decirErrorOpcion(PALABRAS[idx].palabra);
+        decirErrorOpcion(opcion.palabra);
         btn.disabled = true;
         setTimeout(() => btn.classList.remove('incorrecta'), 400);
     }

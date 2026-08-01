@@ -1,8 +1,9 @@
 {
-  "buildId": "v17",
+  "buildId": "v18",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas: se ve la pieza mientras la arrastrás",
-    "El casillero destino se marca en naranja al pasar por arriba"
+    "Imagen: las opciones incorrectas se parecen más a la palabra correcta",
+    "Cada palabra del catálogo trae una o dos similares para confundir",
+    "Esas similares no necesitan tener imagen propia"
   ]
 }
