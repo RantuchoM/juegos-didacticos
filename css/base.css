@@ -1,3 +1,43 @@
+/*
+ * Cifras con Atkinson Hyperlegible: el 3 es abierto (sin “palito” plano)
+ * y se distingue del 5. Solo dígitos; el texto sigue en Lexend / OpenDyslexic.
+ */
+@font-face {
+    font-family: 'CifrasClaras';
+    src: url('../fonts/atkinson-hyperlegible-400.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0030-0039;
+}
+
+@font-face {
+    font-family: 'CifrasClaras';
+    src: url('../fonts/atkinson-hyperlegible-700.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0030-0039;
+}
+
+@font-face {
+    font-family: 'CifrasClaras';
+    src: url('../fonts/atkinson-hyperlegible-700.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0030-0039;
+}
+
+@font-face {
+    font-family: 'CifrasClaras';
+    src: url('../fonts/atkinson-hyperlegible-700.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0030-0039;
+}
+
 @font-face {
     font-family: 'Lexend';
     src: url('../fonts/lexend-400.woff2') format('woff2');
@@ -113,7 +153,7 @@ button,
 
 body {
     --texto-escala: 1;
-    font-family: 'Lexend', 'Segoe UI', Arial, sans-serif;
+    font-family: 'CifrasClaras', 'Lexend', 'Segoe UI', Arial, sans-serif;
     letter-spacing: 0.03em;
     word-spacing: 0.06em;
     line-height: 1.5;
@@ -131,7 +171,7 @@ body {
 
 /* Lectura fácil: OpenDyslexic + más espacio + fondo suave */
 body.modo-lectura-facil {
-    font-family: 'OpenDyslexic', 'Lexend', Arial, sans-serif;
+    font-family: 'CifrasClaras', 'OpenDyslexic', 'Lexend', Arial, sans-serif;
     letter-spacing: 0.08em;
     word-spacing: 0.16em;
     line-height: 1.65;

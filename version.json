@@ -1,8 +1,8 @@
 {
-  "buildId": "v30",
+  "buildId": "v36",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas: la palabra completa suena al toque, sin pausa larga",
-    "La sílaba «ci» ya no se deletrea"
+    "Sílabas con h (hi, he, ham…) en español, no en inglés",
+    "ri/ron sin el sonido «a» de más"
   ]
 }

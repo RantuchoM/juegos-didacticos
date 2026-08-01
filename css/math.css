@@ -825,7 +825,8 @@ body.vincular-dragging * {
     gap: clamp(4px, 0.8vw, 8px);
     justify-content: flex-start;
     align-content: flex-start;
-    min-width: 0;
+    /* Evitar colapso a 0 cuando los ítems pasan a position:absolute */
+    min-width: min-content;
 }
 
 .resta-fuera .objeto-item,

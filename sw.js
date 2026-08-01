@@ -1,6 +1,6 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
-const CACHE_VERSION = 'v30';
+const CACHE_VERSION = 'v36';
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 const TTS_MAX_CHARS = 180;
 
@@ -18,6 +18,8 @@ const PRECACHE_URLS = [
   './fonts/lexend-700.woff2',
   './fonts/opendyslexic-400.woff2',
   './fonts/opendyslexic-700.woff2',
+  './fonts/atkinson-hyperlegible-400.woff2',
+  './fonts/atkinson-hyperlegible-700.woff2',
   './js/main.js',
   './js/pwa.js',
   './js/whats-new.js',

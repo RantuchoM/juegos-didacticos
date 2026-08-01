@@ -522,6 +522,11 @@ function silabaParaVoz(texto) {
 function silabaParaTtsRed(texto) {
     const t = silabaParaVoz(texto);
     if (!t) return t;
+    // h muda: sin la h, Google no lee «hi/he/ham…» en inglés («hái», «ham»…).
+    if (/^h[aeiouáéíóúü]/i.test(t)) {
+        const sinH = t.replace(/^h/i, '');
+        return /[.!?…]$/.test(sinH) ? sinH : `${sinH}.`;
+    }
     if (t.length <= 3 && !/[.!?…]$/.test(t)) return `${t}.`;
     return t;
 }

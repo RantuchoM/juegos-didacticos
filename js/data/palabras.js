@@ -185,7 +185,13 @@ export const PALABRAS = [
     { palabra: 'manteca', silabas: ['man', 'te', 'ca'], emoji: '🧈', similares: ['mantequilla', 'mantaca'] },
     { palabra: 'sal', silabas: ['sal'], emoji: '🧂', similares: ['sol', 'mal'] },
     { palabra: 'azúcar', silabas: ['a', 'zú', 'car'], emoji: '🍬', similares: ['azucarera', 'azucena'] },
-    { palabra: 'aceite', silabas: ['a', 'cei', 'te'], emoji: '🫒', similares: ['aceitera', 'aceituna'] },
+    {
+        palabra: 'aceite',
+        silabas: ['a', 'cei', 'te'],
+        svg: '<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" aria-label="aceite"><rect x="48" y="6" width="24" height="10" rx="3" fill="#6D4C41"/><rect x="52" y="14" width="16" height="8" rx="2" fill="#8D6E63"/><path d="M38 28 H82 Q90 28 90 36 V86 Q90 94 82 94 H38 Q30 94 30 86 V36 Q30 28 38 28 Z" fill="#FFF8E1" stroke="#F9A825" stroke-width="3"/><path d="M34 50 H86 V86 Q86 90 82 90 H38 Q34 90 34 86 Z" fill="#FBC02D"/><ellipse cx="60" cy="50" rx="26" ry="5" fill="#FDD835"/><path d="M60 58 Q68 68 60 78 Q52 68 60 58 Z" fill="#FF8F00"/><ellipse cx="60" cy="74" rx="5" ry="4" fill="#FF8F00"/></svg>',
+        similares: ['aceitera', 'aceituna']
+    },
+    { palabra: 'aceituna', silabas: ['a', 'cei', 'tu', 'na'], emoji: '🫒', similares: ['aceite', 'aceitoso'] },
     { palabra: 'lechuga', silabas: ['le', 'chu', 'ga'], emoji: '🥬', similares: ['lechuza', 'lechal'] },
     { palabra: 'brócoli', silabas: ['bró', 'co', 'li'], emoji: '🥦', similares: ['brócol', 'brocoli'] },
     { palabra: 'pepino', silabas: ['pe', 'pi', 'no'], emoji: '🥒', similares: ['pepina', 'pepita'] },

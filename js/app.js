@@ -615,6 +615,9 @@ function crearObjetoItem(emoji, fontSize) {
 function renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn, claseAgrupado = 'objetos-agrupados') {
     contenedor.classList.remove('objetos-movibles');
     contenedor.style.minHeight = '';
+    contenedor.style.minWidth = '';
+    contenedor.style.width = '';
+    contenedor.style.height = '';
     contenedor.innerHTML = '';
     if (claseAgrupado) {
         contenedor.classList.toggle(claseAgrupado, cantidad > 10);
@@ -749,12 +752,13 @@ document.addEventListener('pointercancel', onPointerUpObjeto, true);
 
 /**
  * Permite mover piezas dentro del recuadro: decenas enteras juntas, unidades una a una.
+ * Fija el tamaño del contenedor antes del position:absolute para que no colapse
+ * (p. ej. resta-fuera en grid 1fr con min-width:0 → peces fuera del marco verde).
  */
 function activarMovimientoObjetos(container) {
     if (!container || !container.children.length) return;
 
     limpiarDragObjetos();
-    container.classList.add('objetos-movibles');
 
     const units = unidadesArrastreObjetos(container);
     if (!units.length) return;
@@ -777,7 +781,14 @@ function activarMovimientoObjetos(container) {
         };
     });
 
-    container.style.minHeight = `${Math.max(container.offsetHeight, 72)}px`;
+    // Congelar tamaño del flujo normal; si no, al absolutizar el ancho cae a 0.
+    const boxW = Math.ceil(Math.max(cRect.width, container.scrollWidth));
+    const boxH = Math.ceil(Math.max(cRect.height, container.scrollHeight, 72));
+    container.style.minWidth = `${boxW}px`;
+    container.style.width = `${boxW}px`;
+    container.style.minHeight = `${boxH}px`;
+    container.style.height = `${boxH}px`;
+    container.classList.add('objetos-movibles');
 
     layouts.forEach(({ el, left, top, width }) => {
         if (el.parentElement !== container) {
