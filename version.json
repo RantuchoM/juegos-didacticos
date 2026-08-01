@@ -1,9 +1,9 @@
 {
-  "buildId": "v22",
+  "buildId": "v23",
   "title": "¡Novedades!",
   "changes": [
-    "Arriba, al lado de Volver, se ve el nombre del juego",
-    "Unir: también podés arrastrar el número hasta el grupo",
-    "Seguir tocando funciona igual que antes"
+    "En Contar, Sumar y Restar podés mover los dibujos dentro del recuadro",
+    "Los bloques de 10 se mueven todos juntos",
+    "Las unidades se pueden acomodar una por una"
   ]
 }
