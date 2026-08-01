@@ -1184,6 +1184,8 @@ let palabraActual = null;
 let fichas = [];
 let slots = [];
 let bloqueado = false;
+/** Drag & drop de sílabas (pointer): null | estado de arrastre */
+let dragSilabas = null;
 
 const elImagen = document.getElementById('silabas-imagen');
 const elZonas = document.getElementById('zonas-respuesta');
@@ -1191,14 +1193,17 @@ const elPool = document.getElementById('pool-silabas');
 const elMensaje = document.getElementById('mensaje-silabas');
 const elContador = document.getElementById('silabas-contador');
 const btnSiguiente = document.getElementById('btn-siguiente');
+const UMBRAL_DRAG_SILABA_PX = 10;
 
 function iniciarSilabas() {
+    limpiarDragSilabas();
     colaPalabras = armarColaSilabas();
     indiceActual = 0;
     cargarPalabra();
 }
 
 function cargarPalabra() {
+    limpiarDragSilabas();
     bloqueado = false;
     btnSiguiente.classList.add('oculto');
     elMensaje.textContent = '';
@@ -1216,14 +1221,152 @@ function cargarPalabra() {
     renderSilabas();
 }
 
+function limpiarDragSilabas() {
+    if (!dragSilabas) return;
+    dragSilabas.ghost?.remove();
+    document.querySelectorAll('.slot-silaba.drag-over, .ficha-silaba.arrastrando, .slot-silaba.arrastrando')
+        .forEach((el) => el.classList.remove('drag-over', 'arrastrando'));
+    document.body.classList.remove('silabas-dragging');
+    dragSilabas = null;
+}
+
+function slotBajoPunto(x, y) {
+    const nodos = document.elementsFromPoint(x, y);
+    for (const n of nodos) {
+        const slot = n.closest?.('.slot-silaba');
+        if (slot && elZonas.contains(slot)) return slot;
+    }
+    return null;
+}
+
+function estaSobrePool(x, y) {
+    if (!elPool) return false;
+    const r = elPool.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+
+function textoFicha(fichaId) {
+    return fichas.find((f) => f.id === fichaId)?.texto || '';
+}
+
+function enlazarDragSilaba(el, { fichaId, origen, slotIdx = null }) {
+    el.style.touchAction = 'none';
+    el.addEventListener('pointerdown', (event) => {
+        if (bloqueado) return;
+        if (event.button != null && event.button !== 0) return;
+        if (origen === 'pool') {
+            const ficha = fichas.find((f) => f.id === fichaId);
+            if (!ficha || ficha.usada) return;
+        }
+        if (origen === 'slot' && slots[slotIdx] === null) return;
+
+        event.preventDefault();
+        const rect = el.getBoundingClientRect();
+        dragSilabas = {
+            fichaId,
+            origen,
+            slotIdx,
+            startX: event.clientX,
+            startY: event.clientY,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+            moved: false,
+            ghost: null,
+            pointerId: event.pointerId,
+            origenEl: el
+        };
+        try {
+            el.setPointerCapture(event.pointerId);
+        } catch {
+            // ignore
+        }
+    });
+}
+
+function onPointerMoveSilabas(event) {
+    if (!dragSilabas || event.pointerId !== dragSilabas.pointerId) return;
+    const dx = event.clientX - dragSilabas.startX;
+    const dy = event.clientY - dragSilabas.startY;
+    if (!dragSilabas.moved && Math.hypot(dx, dy) < UMBRAL_DRAG_SILABA_PX) return;
+
+    if (!dragSilabas.moved) {
+        dragSilabas.moved = true;
+        document.body.classList.add('silabas-dragging');
+        dragSilabas.origenEl.classList.add('arrastrando');
+        const ghost = document.createElement('div');
+        ghost.className = 'ficha-silaba ficha-silaba-ghost';
+        ghost.textContent = textoFicha(dragSilabas.fichaId);
+        ghost.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(ghost);
+        dragSilabas.ghost = ghost;
+    }
+
+    const g = dragSilabas.ghost;
+    if (g) {
+        g.style.left = `${event.clientX - dragSilabas.offsetX}px`;
+        g.style.top = `${event.clientY - dragSilabas.offsetY}px`;
+    }
+
+    document.querySelectorAll('.slot-silaba.drag-over').forEach((s) => s.classList.remove('drag-over'));
+    const slot = slotBajoPunto(event.clientX, event.clientY);
+    if (slot) slot.classList.add('drag-over');
+}
+
+function onPointerUpSilabas(event) {
+    if (!dragSilabas || event.pointerId !== dragSilabas.pointerId) return;
+    const estado = dragSilabas;
+    const { fichaId, origen, slotIdx, moved } = estado;
+    const x = event.clientX;
+    const y = event.clientY;
+
+    estado.ghost?.remove();
+    document.querySelectorAll('.slot-silaba.drag-over, .ficha-silaba.arrastrando, .slot-silaba.arrastrando')
+        .forEach((el) => el.classList.remove('drag-over', 'arrastrando'));
+    document.body.classList.remove('silabas-dragging');
+    dragSilabas = null;
+
+    if (!moved) {
+        if (origen === 'pool') ponerEnSlot(fichaId);
+        else quitarDeSlot(slotIdx);
+        return;
+    }
+
+    const slotEl = slotBajoPunto(x, y);
+    if (slotEl) {
+        const targetIdx = Number(slotEl.dataset.slotIdx);
+        if (Number.isFinite(targetIdx)) {
+            soltarEnSlot(fichaId, targetIdx, origen, slotIdx);
+            return;
+        }
+    }
+
+    if (origen === 'slot' && estaSobrePool(x, y)) {
+        quitarDeSlot(slotIdx);
+        return;
+    }
+
+    renderSilabas();
+}
+
+document.addEventListener('pointermove', onPointerMoveSilabas);
+document.addEventListener('pointerup', onPointerUpSilabas);
+document.addEventListener('pointercancel', onPointerUpSilabas);
+
 function renderSilabas() {
     elZonas.innerHTML = '';
     slots.forEach((fichaId, slotIdx) => {
         const slot = document.createElement('button');
         slot.type = 'button';
         slot.className = 'slot-silaba' + (fichaId !== null ? ' lleno' : '');
-        slot.textContent = fichaId !== null ? fichas.find((f) => f.id === fichaId).texto : '';
-        slot.addEventListener('click', () => quitarDeSlot(slotIdx));
+        slot.dataset.slotIdx = String(slotIdx);
+        slot.textContent = fichaId !== null ? textoFicha(fichaId) : '';
+        if (fichaId !== null && !bloqueado) {
+            enlazarDragSilaba(slot, { fichaId, origen: 'slot', slotIdx });
+        } else if (fichaId !== null) {
+            // bloqueado: sin interacción
+        } else {
+            // slot vacío: solo destino de drop (click no hace nada)
+        }
         elZonas.appendChild(slot);
     });
 
@@ -1234,7 +1377,9 @@ function renderSilabas() {
         btn.className = 'ficha-silaba';
         btn.textContent = ficha.texto;
         btn.disabled = ficha.usada || bloqueado;
-        btn.addEventListener('click', () => ponerEnSlot(ficha.id));
+        if (!btn.disabled) {
+            enlazarDragSilaba(btn, { fichaId: ficha.id, origen: 'pool' });
+        }
         elPool.appendChild(btn);
     });
 }
@@ -1243,19 +1388,53 @@ function primerSlotLibre() {
     return slots.findIndex((s) => s === null);
 }
 
+function afterColocarSilaba(silaba) {
+    renderSilabas();
+    const completo = primerSlotLibre() === -1;
+    hablarSilaba(silaba);
+    if (completo) verificar();
+}
+
 function ponerEnSlot(fichaId) {
     if (bloqueado) return;
     const idx = primerSlotLibre();
     if (idx === -1) return;
     sonidoPulsacionLetra();
     slots[idx] = fichaId;
-    const silaba = fichas.find((f) => f.id === fichaId).texto;
+    const silaba = textoFicha(fichaId);
     fichas.find((f) => f.id === fichaId).usada = true;
-    renderSilabas();
-    const completo = primerSlotLibre() === -1;
-    // La voz no debe bloquear el OK: en móvil el TTS a veces no dispara onend.
-    hablarSilaba(silaba);
-    if (completo) verificar();
+    afterColocarSilaba(silaba);
+}
+
+/** Suelta una ficha en un slot concreto (drag & drop); intercambia si había otra. */
+function soltarEnSlot(fichaId, targetIdx, origen, fromSlotIdx) {
+    if (bloqueado) return;
+    if (targetIdx < 0 || targetIdx >= slots.length) return;
+
+    if (origen === 'slot' && fromSlotIdx === targetIdx) {
+        renderSilabas();
+        return;
+    }
+
+    const ocupante = slots[targetIdx];
+    const silaba = textoFicha(fichaId);
+
+    if (origen === 'pool') {
+        const ficha = fichas.find((f) => f.id === fichaId);
+        if (!ficha || ficha.usada) return;
+        if (ocupante !== null) {
+            fichas.find((f) => f.id === ocupante).usada = false;
+        }
+        slots[targetIdx] = fichaId;
+        ficha.usada = true;
+    } else {
+        // Mover / intercambiar entre slots
+        slots[fromSlotIdx] = ocupante;
+        slots[targetIdx] = fichaId;
+    }
+
+    sonidoPulsacionLetra();
+    afterColocarSilaba(silaba);
 }
 
 function quitarDeSlot(slotIdx) {

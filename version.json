@@ -1,8 +1,9 @@
 {
-  "buildId": "v15",
+  "buildId": "v16",
   "title": "¡Novedades!",
   "changes": [
-    "Voz en el celular: vuelve a funcionar al tocar (como al principio)",
-    "Se habla en el mismo toque, sin demoras que Android bloqueaba"
+    "Sílabas: ahora podés arrastrar las piezas a los casilleros",
+    "También sigue funcionando tocar para poner o sacar",
+    "Voz en el celular al tocar, como al principio"
   ]
 }
