@@ -1,8 +1,9 @@
 {
-  "buildId": "v11",
+  "buildId": "v12",
   "title": "¡Novedades!",
   "changes": [
-    "Palabra: el spoiler ya no se mueve; es un velo fijo semitransparente",
-    "Menú más corto y botones −/+ para el tamaño del texto"
+    "Voz en el celular: vuelve a hablar al tocar",
+    "Sílabas: el «¡Muy bien!» aparece aunque la voz falle",
+    "Más estable al pronunciar sílabas seguidas"
   ]
 }
