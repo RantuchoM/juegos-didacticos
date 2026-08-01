@@ -60,6 +60,23 @@ export const CONFIG_JUEGOS_MAT = {
 
 export const IDS_JUEGOS_MAT = Object.keys(CONFIG_JUEGOS_MAT);
 
+/** Nombre corto mostrado al lado de «Volver» (mismo texto que el menú). */
+export const NOMBRES_JUEGO = {
+    teclado: 'Teclado',
+    silabas: 'Sílabas',
+    'palabra-imagen': 'Palabra',
+    'imagen-palabra': 'Imagen',
+    explorar: 'Explorar',
+    contar: 'Contar',
+    vincular: 'Unir',
+    'escribir-numero': 'Escribir',
+    'elegir-numero': 'Elegir',
+    'sumar-escribir': 'Sumar',
+    'sumar-elegir': 'Suma',
+    'restar-escribir': 'Restar',
+    aleatorio: 'Aleatorio'
+};
+
 export const MIN_SILABAS_JUEGO = 2;
 export const JUEGOS_ALEATORIOS = [
     'silabas', 'palabra-imagen', 'imagen-palabra',

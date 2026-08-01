@@ -1,6 +1,10 @@
 /* Service worker: network-first + olvida caches viejos al publicar una versión nueva.
  * Subí CACHE_VERSION (o cualquier cambio en este archivo) en cada deploy para forzar update. */
+<<<<<<< HEAD
 const CACHE_VERSION = 'v21';
+=======
+const CACHE_VERSION = 'v20';
+>>>>>>> cursor/unir-drag-nombre-juego-9c4c
 const CACHE_NAME = `juegos-didacticos-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [

@@ -3,7 +3,8 @@ import {
     MSG_CASI, MSG_BIEN, MSG_CINCO_EJERCICIOS,
     VINCULAR_GRUPOS, VINCULAR_NUMEROS_SIN_PAR, EMOJIS_CONTAR,
     MIN_SILABAS_JUEGO,
-    JUEGOS_ALEATORIOS, IDS_SIGUIENTE, AUTO_SIGUIENTE_MS
+    JUEGOS_ALEATORIOS, IDS_SIGUIENTE, AUTO_SIGUIENTE_MS,
+    NOMBRES_JUEGO
 } from './config.js';
 import {
     getNivelJuego, getMaxEnPantalla, getMaxRespuesta, maxDigitosJuego,
@@ -767,6 +768,29 @@ function avanzarDespuesDeAcierto(continuarEnJuego) {
     continuarEnJuego();
 }
 
+/** Pone el nombre del juego al lado de «Volver». */
+function actualizarNombreJuego(id) {
+    const nombre = NOMBRES_JUEGO[id];
+    if (!nombre) return;
+    const section = document.getElementById(`juego-${id}`);
+    if (!section) return;
+    const btn = section.querySelector('[data-volver]');
+    if (!btn) return;
+
+    let top = btn.closest('.juego-top');
+    if (!top) {
+        top = document.createElement('div');
+        top.className = 'juego-top';
+        btn.parentElement.insertBefore(top, btn);
+        top.appendChild(btn);
+        const span = document.createElement('span');
+        span.className = 'juego-nombre';
+        top.appendChild(span);
+    }
+    const span = top.querySelector('.juego-nombre');
+    if (span) span.textContent = nombre;
+}
+
 function mostrarJuego(id) {
     if (id !== 'aleatorio') modoAleatorio = false;
     cancelarAutoSiguiente();
@@ -774,6 +798,7 @@ function mostrarJuego(id) {
     desactivarTecladoMat();
     menu.classList.add('oculto');
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
+    actualizarNombreJuego(id);
     if (id === 'teclado') {
         juegoTeclado.classList.remove('oculto');
         longitudTecladoAnterior = textoActual.length;
@@ -1899,15 +1924,126 @@ let vincularSelNum = null;
 let vincularHechos = 0;
 let vincularBloqueado = false;
 let vincularEntradaKb = '';
+/** Drag del número hacia un grupo: null | estado */
+let dragVincular = null;
+const UMBRAL_DRAG_VINCULAR_PX = 10;
 
 const elVincularObjetos = document.getElementById('vincular-objetos');
 const elVincularNumeros = document.getElementById('vincular-numeros');
 const elVincularMensaje = document.getElementById('vincular-mensaje');
 const btnVincularSiguiente = document.getElementById('btn-vincular-siguiente');
 
+function limpiarDragVincular() {
+    if (!dragVincular) return;
+    dragVincular.ghost?.remove();
+    const capa = document.getElementById('silabas-drag-layer');
+    if (capa && capa.childElementCount === 0) capa.remove();
+    document.querySelectorAll('.vincular-objetos.drag-over, .vincular-numero.arrastrando')
+        .forEach((el) => el.classList.remove('drag-over', 'arrastrando'));
+    document.body.classList.remove('vincular-dragging');
+    dragVincular = null;
+}
+
+function grupoVincularBajoPunto(x, y) {
+    const nodos = document.elementsFromPoint(x, y);
+    for (const n of nodos) {
+        const panel = n.closest?.('.vincular-objetos');
+        if (panel && elVincularObjetos.contains(panel) && !panel.classList.contains('vinculado')) {
+            return panel;
+        }
+    }
+    return null;
+}
+
+function enlazarDragNumeroVincular(btn, j) {
+    btn.style.touchAction = 'none';
+    btn.addEventListener('pointerdown', (event) => {
+        if (vincularBloqueado || btn.classList.contains('vinculado')) return;
+        if (event.button != null && event.button !== 0) return;
+        event.preventDefault();
+        const rect = btn.getBoundingClientRect();
+        dragVincular = {
+            numIdx: j,
+            startX: event.clientX,
+            startY: event.clientY,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+            moved: false,
+            ghost: null,
+            pointerId: event.pointerId,
+            origenEl: btn
+        };
+        try {
+            btn.setPointerCapture(event.pointerId);
+        } catch {
+            // ignore
+        }
+    });
+}
+
+function onPointerMoveVincular(event) {
+    if (!dragVincular || event.pointerId !== dragVincular.pointerId) return;
+    const x = event.clientX || event.touches?.[0]?.clientX || dragVincular.startX;
+    const y = event.clientY || event.touches?.[0]?.clientY || dragVincular.startY;
+    const dx = x - dragVincular.startX;
+    const dy = y - dragVincular.startY;
+    if (!dragVincular.moved && Math.hypot(dx, dy) < UMBRAL_DRAG_VINCULAR_PX) return;
+
+    if (!dragVincular.moved) {
+        dragVincular.moved = true;
+        document.body.classList.add('vincular-dragging');
+        dragVincular.origenEl.classList.add('arrastrando');
+        dragVincular.ghost = crearGhostSilaba(
+            dragVincular.origenEl,
+            dragVincular.origenEl.textContent
+        );
+    }
+
+    moverGhostSilaba(dragVincular.ghost, x, y, dragVincular.offsetX, dragVincular.offsetY);
+
+    document.querySelectorAll('.vincular-objetos.drag-over').forEach((p) => p.classList.remove('drag-over'));
+    const panel = grupoVincularBajoPunto(x, y);
+    if (panel) panel.classList.add('drag-over');
+}
+
+function onPointerUpVincular(event) {
+    if (!dragVincular || event.pointerId !== dragVincular.pointerId) return;
+    const estado = dragVincular;
+    const x = event.clientX || event.changedTouches?.[0]?.clientX || estado.startX;
+    const y = event.clientY || event.changedTouches?.[0]?.clientY || estado.startY;
+    const { numIdx, moved, origenEl } = estado;
+
+    limpiarDragVincular();
+
+    if (vincularBloqueado || origenEl.classList.contains('vinculado')) return;
+
+    if (!moved) {
+        sonidoPulsacionNumero(origenEl.textContent);
+        seleccionarNumero(numIdx, origenEl);
+        return;
+    }
+
+    const panel = grupoVincularBajoPunto(x, y);
+    if (!panel) return;
+    const i = Number(panel.dataset.idx);
+    if (!Number.isFinite(i)) return;
+
+    limpiarSeleccionVincular();
+    vincularSelObj = i;
+    vincularSelNum = numIdx;
+    panel.classList.add('seleccionado');
+    origenEl.classList.add('seleccionado');
+    intentarVincular();
+}
+
+document.addEventListener('pointermove', onPointerMoveVincular, true);
+document.addEventListener('pointerup', onPointerUpVincular, true);
+document.addEventListener('pointercancel', onPointerUpVincular, true);
+
 function iniciarVincular() {
     desactivarEntradaNumerica();
     desactivarTecladoMat();
+    limpiarDragVincular();
     vincularBloqueado = false;
     vincularHechos = 0;
     vincularSelObj = null;
@@ -1942,10 +2078,7 @@ function iniciarVincular() {
         btn.className = 'vincular-numero';
         btn.textContent = num;
         btn.dataset.idx = j;
-        agregarActivacionTactil(btn, () => {
-            sonidoPulsacionNumero(String(num));
-            seleccionarNumero(j, btn);
-        });
+        enlazarDragNumeroVincular(btn, j);
         elVincularNumeros.appendChild(btn);
     });
 
@@ -2466,6 +2599,7 @@ function mostrarEjercicioAleatorio() {
     seccionesJuego.forEach((s) => s.classList.add('oculto'));
 
     const id = juegoAleatorioId();
+    actualizarNombreJuego(id);
 
     if (id === 'silabas') {
         juegoSilabas.classList.remove('oculto');

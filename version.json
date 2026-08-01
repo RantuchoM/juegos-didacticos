@@ -1,9 +1,9 @@
 {
-  "buildId": "v21",
+  "buildId": "v22",
   "title": "¡Novedades!",
   "changes": [
-    "Voz en el celular: ahora usa audio si la síntesis del sistema no suena",
-    "Al tocar la pantalla se desbloquea el sonido para que se oiga al instante",
-    "Si el teléfono corta la voz, la app cambia sola al plan B"
+    "Arriba, al lado de Volver, se ve el nombre del juego",
+    "Unir: también podés arrastrar el número hasta el grupo",
+    "Seguir tocando funciona igual que antes"
   ]
 }
