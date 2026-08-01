@@ -1,9 +1,9 @@
 {
-  "buildId": "v24",
+  "buildId": "v25",
   "title": "¡Novedades!",
   "changes": [
-    "En Contar, Sumar y Restar podés mover los dibujos dentro del recuadro",
-    "Los bloques de 10 se mueven todos juntos",
-    "Las unidades se pueden acomodar una por una"
+    "Voz nueva: mexicana, más natural (se acabó la voz robótica)",
+    "Sigue funcionando en el celular con los audios de la app",
+    "Más latina y clara para palabras, sílabas y números"
   ]
 }

@@ -95,9 +95,9 @@ export const VOZ = {
     carpeta: 'audio/latino',
     formato: 'mp3',
     usarPersonalizada: true,
-    // Preferir latino si hay, pero el fallback de speak usa es-ES (más fiable en móviles).
+    // Audios locales: voz mexicana neural (Dalia). Fallback de red/synth: es-MX.
     preferirLatinoTTS: true,
-    idiomaTTS: 'es-ES'
+    idiomaTTS: 'es-MX'
 };
 
 export const MENSAJE_AUDIO = {

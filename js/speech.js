@@ -27,20 +27,25 @@ function esTactil() {
 }
 
 /**
- * Selección como en la primera versión que andaba en móvil:
- * Sabina/Helena local → otra es-ES local → cualquier es local → cualquier es.
+ * Preferir voces latinas/mexicanas; si no hay, cualquier español local.
  */
 function cargarVoces() {
     if (!synth) return;
     const voces = synth.getVoices();
     if (!voces || !voces.length) return;
-    const es = (v) => v.lang.toLowerCase().startsWith('es');
+    const lang = (v) => v.lang.toLowerCase();
+    const es = (v) => lang(v).startsWith('es');
     const local = (v) => es(v) && v.localService;
+    const latino = (v) =>
+        es(v) && (
+            /es-mx|es-419|es-us|es-ar|es-co|es-cl|es-pe/.test(lang(v)) ||
+            /dalia|paulina|marina|mexican|latino|latam|argentina|colombia/i.test(v.name)
+        );
     vozEspanola =
+        voces.find((v) => local(v) && latino(v)) ||
+        voces.find(latino) ||
         voces.find((v) => local(v) && /sabina|helena|pablo/i.test(v.name)) ||
-        voces.find((v) => local(v) && v.lang.toLowerCase().startsWith('es-es')) ||
         voces.find(local) ||
-        voces.find((v) => es(v) && v.lang.toLowerCase() === 'es-es') ||
         voces.find(es) ||
         null;
 }
@@ -165,7 +170,7 @@ function urlTtsProxy(texto) {
 /** Directo a Google: hace falta referrerPolicy=no-referrer o Google responde 404. */
 function urlTtsGoogle(texto) {
     const q = encodeURIComponent(String(texto).slice(0, MAX_CHARS_TTS_RED));
-    return `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es&q=${q}`;
+    return `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es-MX&q=${q}`;
 }
 
 function reproducirUrl(url, alTerminar) {
@@ -328,7 +333,7 @@ function hablarNativo(texto, alTerminar, { rate = 0.85, pitch = 1.1 } = {}) {
         timerHablar = null;
         const utterance = new SpeechSynthesisUtterance(String(texto));
         utteranceActual = utterance;
-        utterance.lang = VOZ.idiomaTTS || 'es-ES';
+        utterance.lang = VOZ.idiomaTTS || 'es-MX';
         // Solo forzar voice si es local: las de red fallan offline / en varios Android.
         if (vozEspanola && vozEspanola.localService) {
             utterance.voice = vozEspanola;
