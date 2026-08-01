@@ -1,9 +1,8 @@
 {
-  "buildId": "v26",
+  "buildId": "v30",
   "title": "¡Novedades!",
   "changes": [
-    "Elegir: ya no se tilda al tocar la opción correcta",
-    "El toque responde al toque y después dice el número",
-    "Misma corrección en Suma (elegir)"
+    "Sílabas: la palabra completa suena al toque, sin pausa larga",
+    "La sílaba «ci» ya no se deletrea"
   ]
 }

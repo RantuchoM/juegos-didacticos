@@ -292,6 +292,7 @@
 .btn-toggle-lectura,
 .btn-toggle-spoiler,
 .btn-toggle-autovoz,
+.btn-toggle-similares,
 .btn-toggle-tamano {
     min-width: 48px;
     height: 48px;
@@ -318,6 +319,7 @@
 .btn-toggle-lectura:active,
 .btn-toggle-spoiler:active,
 .btn-toggle-autovoz:active,
+.btn-toggle-similares:active,
 .btn-toggle-tamano:active {
     transform: translateY(3px);
     box-shadow: 0 1px 0 #fbc02d;
@@ -416,6 +418,24 @@
     display: none;
 }
 
+.btn-toggle-similares {
+    font-size: 1.25rem;
+    letter-spacing: -0.04em;
+    background: #f3e5f5;
+    box-shadow: 0 4px 0 #ce93d8;
+    color: #6a1b9a;
+}
+
+.btn-toggle-similares:active {
+    box-shadow: 0 1px 0 #ce93d8;
+}
+
+.btn-toggle-similares.activo {
+    background: #ab47bc;
+    box-shadow: 0 4px 0 #8e24aa;
+    color: white;
+}
+
 .menu-accesibilidad {
     display: flex;
     justify-content: flex-end;
@@ -437,6 +457,7 @@
     .btn-toggle-lectura,
     .btn-toggle-spoiler,
     .btn-toggle-autovoz,
+    .btn-toggle-similares,
     .btn-toggle-tamano {
         min-width: 40px;
         height: 40px;

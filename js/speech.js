@@ -133,6 +133,20 @@ function slugAudio(texto) {
         .replace(/[^a-z0-9-ñ]/g, '');
 }
 
+/**
+ * Homógrafos que solo difieren por tilde no pueden compartir el mismo mp3
+ * (slugAudio quita tildes). papa.mp3 = papa 🥔; papa-acento.mp3 = papá 👨.
+ */
+const SLUG_PALABRA_ACENTO = {
+    papá: 'papa-acento'
+};
+
+function slugAudioPalabra(texto) {
+    const key = String(texto).trim().toLowerCase();
+    if (SLUG_PALABRA_ACENTO[key]) return SLUG_PALABRA_ACENTO[key];
+    return slugAudio(texto);
+}
+
 function urlAudio(tipo, slug) {
     return `${VOZ.carpeta}/${tipo}/${slug}.${VOZ.formato}`;
 }
@@ -176,7 +190,45 @@ function urlTtsGoogle(texto) {
     return `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es-MX&q=${q}`;
 }
 
-function reproducirUrl(url, alTerminar) {
+/** Si el audio trae ~1s de silencio final, dispara el callback antes de onended. */
+function enlazarFinSinColaLarga(audio, terminar, activo) {
+    if (!activo) return;
+    const COLA_S = 0.42;
+    const MIN_DUR = 0.9;
+    let cerrado = false;
+    const fin = () => {
+        if (cerrado) return;
+        cerrado = true;
+        terminar();
+    };
+    const onTick = () => {
+        if (cerrado || audioActual !== audio) {
+            audio.removeEventListener('timeupdate', onTick);
+            return;
+        }
+        const d = audio.duration;
+        if (!Number.isFinite(d) || d < MIN_DUR) return;
+        if (audio.currentTime >= d - COLA_S) {
+            audio.removeEventListener('timeupdate', onTick);
+            audio.onended = null;
+            try {
+                audio.pause();
+            } catch {
+                // ignore
+            }
+            fin();
+        }
+    };
+    audio.addEventListener('timeupdate', onTick);
+    return fin;
+}
+
+/**
+ * @param {string} url
+ * @param {(() => void)=} alTerminar
+ * @param {{ recortarColaLarga?: boolean }} [opts]
+ */
+function reproducirUrl(url, alTerminar, { recortarColaLarga = false } = {}) {
     detenerAudio();
     desbloquearAudio();
     const audio = new Audio();
@@ -186,12 +238,17 @@ function reproducirUrl(url, alTerminar) {
         // ignore
     }
     audioActual = audio;
+    let cerrado = false;
     const terminar = () => {
+        if (cerrado) return;
+        cerrado = true;
         if (audioActual === audio) audioActual = null;
         alTerminar?.();
     };
     audio.onended = terminar;
     audio.onerror = terminar;
+    enlazarFinSinColaLarga(audio, terminar, Boolean(alTerminar && recortarColaLarga));
+
     audio.src = url;
     const playPromise = audio.play();
     if (playPromise && typeof playPromise.catch === 'function') {
@@ -200,7 +257,7 @@ function reproducirUrl(url, alTerminar) {
 }
 
 /** Prueba varias URLs hasta que una reproduzca (onerror → siguiente). */
-function reproducirUrlConFallback(urls, alTerminar) {
+function reproducirUrlConFallback(urls, alTerminar, { recortarColaLarga = false } = {}) {
     const lista = urls.filter(Boolean);
     if (!lista.length) {
         alTerminar?.();
@@ -223,7 +280,10 @@ function reproducirUrlConFallback(urls, alTerminar) {
         }
         audioActual = audio;
         let arranco = false;
+        let cerrado = false;
         const finOk = () => {
+            if (cerrado) return;
+            cerrado = true;
             if (audioActual === audio) audioActual = null;
             alTerminar?.();
         };
@@ -232,9 +292,11 @@ function reproducirUrlConFallback(urls, alTerminar) {
         };
         audio.onended = finOk;
         audio.onerror = () => {
+            if (cerrado) return;
             if (audioActual === audio) audioActual = null;
             intentar();
         };
+        enlazarFinSinColaLarga(audio, finOk, Boolean(alTerminar && recortarColaLarga));
         audio.src = url;
         const playPromise = audio.play();
         if (playPromise && typeof playPromise.catch === 'function') {
@@ -271,7 +333,7 @@ function reproducirSecuencia(urls, alTerminar) {
     siguiente();
 }
 
-function hablarPorAudioRed(texto, alTerminar) {
+function hablarPorAudioRed(texto, alTerminar, { recortarColaLarga = false } = {}) {
     if (!texto) {
         alTerminar?.();
         return;
@@ -284,7 +346,9 @@ function hablarPorAudioRed(texto, alTerminar) {
     }
     utteranceActual = null;
     // 1) Google directo sin Referer  2) proxy del SW
-    reproducirUrlConFallback([urlTtsGoogle(texto), urlTtsProxy(texto)], alTerminar);
+    reproducirUrlConFallback([urlTtsGoogle(texto), urlTtsProxy(texto)], alTerminar, {
+        recortarColaLarga
+    });
 }
 
 /** Suma/resta con MP3 locales encadenados cuando existen. */
@@ -450,7 +514,16 @@ function fonemaLetra(letra) {
 function silabaParaVoz(texto) {
     const t = texto.trim();
     if (!t) return t;
-    return t.charAt(0).toLocaleUpperCase('es') + t.slice(1).toLocaleLowerCase('es');
+    // Minúsculas: «Ne» hace que Google/Android deletreen («ene e»).
+    return t.toLocaleLowerCase('es');
+}
+
+/** Texto para TTS de red: el punto final reduce el deletreo de sílabas cortas. */
+function silabaParaTtsRed(texto) {
+    const t = silabaParaVoz(texto);
+    if (!t) return t;
+    if (t.length <= 3 && !/[.!?…]$/.test(t)) return `${t}.`;
+    return t;
 }
 
 export function hablar(texto, alTerminar) {
@@ -466,7 +539,7 @@ export function hablar(texto, alTerminar) {
         return;
     }
 
-    const palabra = slugAudio(texto);
+    const palabra = slugAudioPalabra(texto);
     if (tieneAudio('palabras', palabra)) {
         cancelarVoz();
         reproducirUrl(urlAudio('palabras', palabra), alTerminar);
@@ -485,11 +558,20 @@ export function hablarSilaba(texto, alTerminar) {
     const slug = slugAudio(silabaParaVoz(texto));
     if (tieneAudio('silabas', slug)) {
         cancelarVoz();
-        reproducirUrl(urlAudio('silabas', slug), alTerminar);
+        // Encadenar palabra: no esperar ~1s de silencio al final del mp3.
+        reproducirUrl(urlAudio('silabas', slug), alTerminar, {
+            recortarColaLarga: Boolean(alTerminar)
+        });
         return;
     }
 
-    hablarNativo(silabaParaVoz(texto), alTerminar, { rate: 0.78, pitch: 1.05 });
+    // Sin mp3 local: TTS de red, recortando cola si hay que encadenar la palabra.
+    if (alTerminar && (preferirAudioRed || !synth || esTactil())) {
+        cancelarVoz();
+        hablarPorAudioRed(silabaParaTtsRed(texto), alTerminar, { recortarColaLarga: true });
+        return;
+    }
+    hablarNativo(silabaParaTtsRed(texto), alTerminar, { rate: 0.78, pitch: 1.05 });
 }
 
 export function hablarCadena(texto) {
@@ -497,7 +579,7 @@ export function hablarCadena(texto) {
     const t = textoParaLecturaEspanol(texto);
     if (!t) return;
 
-    const slug = slugAudio(t);
+    const slug = slugAudioPalabra(t);
     if (tieneAudio('palabras', slug)) {
         cancelarVoz();
         reproducirUrl(urlAudio('palabras', slug));

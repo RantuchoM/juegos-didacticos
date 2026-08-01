@@ -53,6 +53,8 @@ document.getElementById('btn-celebracion-continuar').addEventListener('click', c
 let palabrasMayusculas = localStorage.getItem('palabrasMayus') !== 'min';
 let lecturaFacil = localStorage.getItem('lecturaFacil') === '1';
 let spoilerImagenes = localStorage.getItem('spoilerImagenes') === '1';
+/** Imagen→Palabra: si true, las opciones incluyen palabras parecidas (más difícil). */
+let ipPalabrasSimilares = localStorage.getItem('ipPalabrasSimilares') !== '0';
 /** Si es false, Teclado solo habla al apretar el botón 🔊. */
 let tecladoAutoVoz = localStorage.getItem('tecladoAutoVoz') === '1';
 
@@ -150,6 +152,25 @@ function alternarSpoilerImagenes() {
     sincronizarSpoilerPI();
 }
 
+function aplicarIpPalabrasSimilares() {
+    const btn = document.getElementById('btn-ip-similares');
+    if (!btn) return;
+    btn.classList.toggle('activo', ipPalabrasSimilares);
+    btn.setAttribute('aria-pressed', ipPalabrasSimilares ? 'true' : 'false');
+    btn.title = ipPalabrasSimilares
+        ? 'Difícil: palabras parecidas — tocá para modo fácil'
+        : 'Fácil: palabras distintas — tocá para modo difícil';
+}
+
+function alternarIpPalabrasSimilares() {
+    ipPalabrasSimilares = !ipPalabrasSimilares;
+    localStorage.setItem('ipPalabrasSimilares', ipPalabrasSimilares ? '1' : '0');
+    aplicarIpPalabrasSimilares();
+    if (!juegoImagenPalabra.classList.contains('oculto') && correctoIP !== null) {
+        cargarImagenPalabra();
+    }
+}
+
 function aplicarTecladoAutoVoz() {
     const btn = document.getElementById('btn-teclado-autovoz');
     if (!btn) return;
@@ -179,6 +200,7 @@ document.querySelectorAll('[data-toggle-lectura]').forEach((btn) => {
 document.querySelectorAll('[data-toggle-spoiler]').forEach((btn) => {
     btn.addEventListener('click', alternarSpoilerImagenes);
 });
+document.getElementById('btn-ip-similares')?.addEventListener('click', alternarIpPalabrasSimilares);
 document.querySelectorAll('[data-tamano-menos]').forEach((btn) => {
     btn.addEventListener('click', () => cambiarTextoEscala(-1));
 });
@@ -189,6 +211,7 @@ document.getElementById('btn-teclado-autovoz')?.addEventListener('click', altern
 aplicarModoLetras();
 aplicarLecturaFacil();
 aplicarSpoilerImagenes();
+aplicarIpPalabrasSimilares();
 aplicarTecladoAutoVoz();
 aplicarTextoEscala();
 
@@ -1372,18 +1395,20 @@ function indicesOpciones(correctoIdx, cantidad = 3) {
     return mezclar(indices);
 }
 
-/** Opciones de texto para Imagen→Palabra: correcta + similares (pueden no tener imagen). */
+/** Opciones de texto para Imagen→Palabra: correcta + similares o palabras al azar. */
 function opcionesImagenPalabra(correctoIdx, cantidad = 3) {
     const correcto = PALABRAS[correctoIdx];
     const usadas = new Set([correcto.palabra.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()]);
     const opciones = [{ palabra: correcto.palabra, correcta: true }];
 
-    for (const s of correcto.similares || []) {
-        if (opciones.length >= cantidad) break;
-        const key = s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-        if (usadas.has(key)) continue;
-        usadas.add(key);
-        opciones.push({ palabra: s, correcta: false });
+    if (ipPalabrasSimilares) {
+        for (const s of correcto.similares || []) {
+            if (opciones.length >= cantidad) break;
+            const key = s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+            if (usadas.has(key)) continue;
+            usadas.add(key);
+            opciones.push({ palabra: s, correcta: false });
+        }
     }
 
     while (opciones.length < cantidad) {
@@ -1669,10 +1694,13 @@ function primerSlotLibre() {
 
 function afterColocarSilaba(silaba) {
     const completo = primerSlotLibre() === -1;
-    // Hablar antes de re-render: más cerca del gesto del toque (móvil).
-    hablarSilaba(silaba);
     renderSilabas();
-    if (completo) verificar();
+    if (completo) {
+        verificar(silaba);
+        return;
+    }
+    // Hablar cerca del gesto del toque (móvil).
+    hablarSilaba(silaba);
 }
 
 function ponerEnSlot(fichaId) {
@@ -1726,7 +1754,7 @@ function quitarDeSlot(slotIdx) {
     renderSilabas();
 }
 
-function verificar() {
+function verificar(ultimaSilaba) {
     const orden = slots.map((id) => fichas.find((f) => f.id === id).texto);
     const correcto = orden.every((s, i) => s === palabraActual.silabas[i]);
 
@@ -1734,7 +1762,9 @@ function verificar() {
         bloqueado = true;
         elImagen.classList.add('acierto');
         mostrarFeedback(elMensaje, MSG_BIEN, 'ok');
-        hablar(palabraActual.palabra);
+        const decirPalabra = () => hablar(palabraActual.palabra);
+        if (ultimaSilaba) hablarSilaba(ultimaSilaba, decirPalabra);
+        else decirPalabra();
         btnSiguiente.classList.remove('oculto');
         registrarEjercicioCompletado();
         programarAutoSiguiente();
@@ -1742,7 +1772,9 @@ function verificar() {
     } else {
         elImagen.classList.add('error');
         mostrarFeedback(elMensaje, MSG_CASI, 'mal');
-        decirErrorOpcion();
+        const alFin = () => decirErrorOpcion();
+        if (ultimaSilaba) hablarSilaba(ultimaSilaba, alFin);
+        else alFin();
         setTimeout(() => elImagen.classList.remove('error'), 400);
         slots = new Array(palabraActual.silabas.length).fill(null);
         fichas.forEach((f) => { f.usada = false; });
