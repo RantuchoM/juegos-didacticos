@@ -1,14 +1,9 @@
 {
-  "buildId": "v12",
+  "buildId": "v13",
   "title": "¡Novedades!",
   "changes": [
-<<<<<<< HEAD
-    "Lectura: Explorar — catálogo de palabras con dibujo; tocá para escuchar",
-    "Matemática: grupos de 10 también en Unir, Sumar y Restar"
-=======
     "Voz en el celular: vuelve a hablar al tocar",
     "Sílabas: el «¡Muy bien!» aparece aunque la voz falle",
     "Más estable al pronunciar sílabas seguidas"
->>>>>>> cursor/fix-voz-silabas-movil-2cfd
   ]
 }
