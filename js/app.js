@@ -1193,7 +1193,7 @@ const elPool = document.getElementById('pool-silabas');
 const elMensaje = document.getElementById('mensaje-silabas');
 const elContador = document.getElementById('silabas-contador');
 const btnSiguiente = document.getElementById('btn-siguiente');
-const UMBRAL_DRAG_SILABA_PX = 10;
+const UMBRAL_DRAG_SILABA_PX = 6;
 
 function iniciarSilabas() {
     limpiarDragSilabas();
@@ -1246,10 +1246,11 @@ function capaDragSilabas() {
 
 function crearGhostSilaba(origenEl, texto) {
     const rect = origenEl.getBoundingClientRect();
+    const cs = window.getComputedStyle(origenEl);
     const ghost = document.createElement('div');
     ghost.className = 'ficha-silaba-ghost';
     ghost.textContent = texto;
-    // Estilos inline: visibles aunque overflow/stacking del layout los tape
+    // Estilos inline + capa en <html>: visibles aunque body tenga overflow:hidden
     ghost.style.cssText = [
         'position:fixed',
         `left:${rect.left}px`,
@@ -1267,10 +1268,11 @@ function crearGhostSilaba(origenEl, texto) {
         'box-shadow:0 12px 24px rgba(2,119,189,0.35), 0 6px 0 #fbc02d',
         'color:#5d4037',
         'font-weight:800',
-        `font-size:${window.getComputedStyle(origenEl).fontSize || '1.2rem'}`,
-        'font-family:inherit',
-        'letter-spacing:inherit',
-        'z-index:2147483646',
+        `font-size:${cs.fontSize || '1.2rem'}`,
+        `font-family:${cs.fontFamily || 'inherit'}`,
+        `letter-spacing:${cs.letterSpacing || 'normal'}`,
+        `text-transform:${cs.textTransform || 'none'}`,
+        'z-index:2147483647',
         'pointer-events:none',
         'opacity:1',
         'transform:scale(1.08)',

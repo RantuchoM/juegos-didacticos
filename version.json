@@ -1,9 +1,8 @@
 {
-  "buildId": "v16",
+  "buildId": "v17",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas: ahora podés arrastrar las piezas a los casilleros",
-    "También sigue funcionando tocar para poner o sacar",
-    "Voz en el celular al tocar, como al principio"
+    "Sílabas: se ve la pieza mientras la arrastrás",
+    "El casillero destino se marca en naranja al pasar por arriba"
   ]
 }
