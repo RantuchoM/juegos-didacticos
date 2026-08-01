@@ -295,6 +295,14 @@
     background: #fff8e1;
 }
 
+.vincular-objetos.drag-over {
+    border-color: #ff9800;
+    box-shadow: 0 6px 0 #ffb74d;
+    background: #fff3e0;
+    outline: 3px dashed #ff9800;
+    outline-offset: -4px;
+}
+
 .vincular-objetos.vinculado {
     border-color: #66bb6a;
     box-shadow: 0 6px 0 #a5d6a7;
@@ -312,12 +320,15 @@
     font-weight: 800;
     color: #5d4037;
     padding: clamp(12px, 2.2vh, 18px) 8px;
-    cursor: pointer;
+    cursor: grab;
     min-width: 0;
     min-height: clamp(48px, 10vh, 64px);
     display: flex;
     align-items: center;
     justify-content: center;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .vincular-numero.seleccionado {
@@ -325,11 +336,22 @@
     box-shadow: 0 6px 0 #ffca28;
 }
 
+.vincular-numero.arrastrando {
+    opacity: 0.35;
+}
+
 .vincular-numero.vinculado {
     background: #a5d6a7;
     box-shadow: 0 6px 0 #66bb6a;
     color: #1b5e20;
     cursor: default;
+}
+
+body.vincular-dragging,
+body.vincular-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .vincular-sep {
@@ -344,9 +366,17 @@
 
 /* Móvil / pantallas angostas: grupos 2×2 a todo el ancho + números abajo */
 @media (max-width: 700px) {
-    #juego-vincular .btn-volver {
+    #juego-vincular .juego-top {
         margin-bottom: 4px;
+    }
+
+    #juego-vincular .btn-volver {
+        margin-bottom: 0;
         padding: 6px 12px;
+    }
+
+    #juego-vincular .juego-nombre {
+        font-size: clamp(1.05rem, 4vw, 1.25rem);
     }
 
     #juego-vincular .quiz-header {
