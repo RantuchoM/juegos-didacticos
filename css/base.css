@@ -112,6 +112,7 @@ button,
 }
 
 body {
+    --texto-escala: 1;
     font-family: 'Lexend', 'Segoe UI', Arial, sans-serif;
     letter-spacing: 0.03em;
     word-spacing: 0.06em;
@@ -181,7 +182,7 @@ body.modo-lectura-facil .suma-cantidad {
 
 h1 {
     color: #0288d1;
-    font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+    font-size: calc(clamp(1.1rem, 3.5vw, 1.6rem) * var(--texto-escala, 1));
     margin: 0 0 clamp(6px, 1.5vh, 12px);
     text-align: center;
     flex-shrink: 0;

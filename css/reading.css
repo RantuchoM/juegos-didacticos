@@ -36,7 +36,7 @@
     color: #0288d1;
     font-family: inherit;
     font-weight: 800;
-    font-size: clamp(36px, min(16vw, 14vh), 120px);
+    font-size: calc(clamp(36px, min(16vw, 14vh), 120px) * var(--texto-escala, 1));
     line-height: 1.15;
     outline: none;
     resize: none;
@@ -173,7 +173,7 @@ button.accion:active {
     border: 3px dashed #81d4fa;
     border-radius: 14px;
     background: white;
-    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-size: calc(clamp(1.1rem, 4vw, 1.6rem) * var(--texto-escala, 1));
     font-weight: 700;
     color: #0288d1;
     cursor: pointer;
@@ -208,7 +208,7 @@ button.accion:active {
     border-radius: 14px;
     background: #ffeb3b;
     box-shadow: 0 5px 0 #fbc02d;
-    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-size: calc(clamp(1.1rem, 4vw, 1.6rem) * var(--texto-escala, 1));
     font-weight: 700;
     color: #5d4037;
     cursor: pointer;
@@ -279,7 +279,7 @@ button.accion:active {
 }
 
 .palabra-grande {
-    font-size: clamp(1.8rem, min(9vw, 10vh), 3.2rem);
+    font-size: calc(clamp(1.8rem, min(9vw, 10vh), 3.2rem) * var(--texto-escala, 1));
     font-weight: 800;
     text-align: center;
     color: #0288d1;
@@ -484,7 +484,7 @@ button.accion:active {
     border-radius: 16px;
     background: #ffeb3b;
     box-shadow: 0 5px 0 #fbc02d;
-    font-size: clamp(1.1rem, min(4.5vw, 4vh), 1.6rem);
+    font-size: calc(clamp(1.1rem, min(4.5vw, 4vh), 1.6rem) * var(--texto-escala, 1));
     font-weight: 700;
     color: #5d4037;
     cursor: pointer;

@@ -37,7 +37,7 @@
 
 .btn-juego {
     padding: clamp(6px, 1.2vh, 12px) 6px;
-    font-size: clamp(0.65rem, 2.2vw, 0.85rem);
+    font-size: calc(clamp(0.65rem, 2.2vw, 0.85rem) * var(--texto-escala, 1));
     font-weight: 700;
     border: none;
     border-radius: 16px;
@@ -59,7 +59,12 @@
     box-shadow: 0 4px 0 #b3e5fc;
 }
 
-.btn-juego .emoji-menu { font-size: clamp(1.4rem, 5vh, 2rem); display: block; margin-bottom: 4px; line-height: 1; }
+.btn-juego .emoji-menu {
+    font-size: calc(clamp(1.4rem, 5vh, 2rem) * var(--texto-escala, 1));
+    display: block;
+    margin-bottom: 4px;
+    line-height: 1;
+}
 
 .btn-juego-aleatorio {
     grid-column: 1 / -1;
@@ -77,7 +82,7 @@
 .menu-seccion {
     grid-column: 1 / -1;
     color: #0277bd;
-    font-size: 0.95rem;
+    font-size: calc(0.95rem * var(--texto-escala, 1));
     font-weight: 700;
     margin: 4px 0 0;
     text-align: center;
@@ -254,7 +259,8 @@
 .btn-toggle-mayus,
 .btn-toggle-lectura,
 .btn-toggle-spoiler,
-.btn-toggle-autovoz {
+.btn-toggle-autovoz,
+.btn-toggle-tamano {
     min-width: 48px;
     height: 48px;
     padding: 0 12px;
@@ -279,9 +285,37 @@
 .btn-toggle-mayus:active,
 .btn-toggle-lectura:active,
 .btn-toggle-spoiler:active,
-.btn-toggle-autovoz:active {
+.btn-toggle-autovoz:active,
+.btn-toggle-tamano:active {
     transform: translateY(3px);
     box-shadow: 0 1px 0 #fbc02d;
+}
+
+.tamano-texto-grupo {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.btn-toggle-tamano {
+    min-width: 40px;
+    width: 40px;
+    padding: 0;
+    font-size: 1.6rem;
+    background: #b2ebf2;
+    box-shadow: 0 4px 0 #4dd0e1;
+    color: #006064;
+}
+
+.btn-toggle-tamano:active {
+    box-shadow: 0 1px 0 #4dd0e1;
+}
+
+.btn-toggle-tamano:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
 }
 
 .btn-toggle-spoiler {
@@ -358,6 +392,29 @@
     width: 100%;
     margin-bottom: clamp(4px, 1vh, 8px);
     flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+    .lectura-header-acciones {
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .btn-toggle-mayus,
+    .btn-toggle-lectura,
+    .btn-toggle-spoiler,
+    .btn-toggle-autovoz,
+    .btn-toggle-tamano {
+        min-width: 40px;
+        height: 40px;
+    }
+
+    .btn-toggle-tamano {
+        width: 36px;
+        min-width: 36px;
+        font-size: 1.4rem;
+    }
 }
 
 body.modo-mayusculas #pantalla,

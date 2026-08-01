@@ -1,9 +1,9 @@
 {
-  "buildId": "v9",
+  "buildId": "v10",
   "title": "¡Novedades!",
   "changes": [
-    "Unir en el celular: los 4 grupos se ven juntos en pantalla, sin cortarse",
-    "Teclado: la palabra se achica sola para verse entera",
-    "Menú: mayúsculas/minúsculas y lectura fácil también en los nombres de los juegos"
+    "Menú: solo dice Lectura y Matemática (sin «de más fácil a más difícil»)",
+    "Botones − y + en los encabezados para achicar o agrandar el texto",
+    "El tamaño elegido se guarda para la próxima vez"
   ]
 }
