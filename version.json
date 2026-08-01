@@ -1,9 +1,9 @@
 {
-  "buildId": "v18",
+  "buildId": "v19",
   "title": "¡Novedades!",
   "changes": [
-    "Imagen: las opciones incorrectas se parecen más a la palabra correcta",
-    "Cada palabra del catálogo trae una o dos similares para confundir",
-    "Esas similares no necesitan tener imagen propia"
+    "80 palabras nuevas en el catálogo (mamá, pato, chocolate…)",
+    "Imagen: las parecidas ya no son diminutivos (nada de pianito)",
+    "Más confusión al leer: palabras distintas que se parecen"
   ]
 }

@@ -46,7 +46,7 @@ Edita `js/data/palabras.js`. Cada entrada tiene esta forma:
 { palabra: 'perro', silabas: ['pe', 'rro'], emoji: '🐶', similares: ['pero', 'cerro'] }
 ```
 
-- `similares` — 1 o 2 palabras parecidas para confundir en el juego **Imagen** (no necesitan imagen ni estar en el catálogo).
+- `similares` — 1 o 2 palabras **distintas** que se parecen al leer (para el juego **Imagen**). No uses diminutivos (`piano`/`pianito`) ni el plural de la misma palabra. No necesitan imagen ni estar en el catálogo.
 - También puedes usar `svg` en lugar de `emoji` para dibujos vectoriales (ver la palabra «mesa»).
 
 ### Cambiar niveles de dificultad
