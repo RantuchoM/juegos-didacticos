@@ -1227,7 +1227,63 @@ function limpiarDragSilabas() {
     document.querySelectorAll('.slot-silaba.drag-over, .ficha-silaba.arrastrando, .slot-silaba.arrastrando')
         .forEach((el) => el.classList.remove('drag-over', 'arrastrando'));
     document.body.classList.remove('silabas-dragging');
+    const capa = document.getElementById('silabas-drag-layer');
+    if (capa && capa.childElementCount === 0) capa.remove();
     dragSilabas = null;
+}
+
+function capaDragSilabas() {
+    let capa = document.getElementById('silabas-drag-layer');
+    if (!capa) {
+        capa = document.createElement('div');
+        capa.id = 'silabas-drag-layer';
+        capa.className = 'silabas-drag-layer';
+        capa.setAttribute('aria-hidden', 'true');
+        document.documentElement.appendChild(capa);
+    }
+    return capa;
+}
+
+function crearGhostSilaba(origenEl, texto) {
+    const rect = origenEl.getBoundingClientRect();
+    const ghost = document.createElement('div');
+    ghost.className = 'ficha-silaba-ghost';
+    ghost.textContent = texto;
+    // Estilos inline: visibles aunque overflow/stacking del layout los tape
+    ghost.style.cssText = [
+        'position:fixed',
+        `left:${rect.left}px`,
+        `top:${rect.top}px`,
+        `width:${Math.max(rect.width, 52)}px`,
+        `height:${Math.max(rect.height, 44)}px`,
+        'margin:0',
+        'box-sizing:border-box',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'border:none',
+        'border-radius:14px',
+        'background:#ffeb3b',
+        'box-shadow:0 12px 24px rgba(2,119,189,0.35), 0 6px 0 #fbc02d',
+        'color:#5d4037',
+        'font-weight:800',
+        `font-size:${window.getComputedStyle(origenEl).fontSize || '1.2rem'}`,
+        'font-family:inherit',
+        'letter-spacing:inherit',
+        'z-index:2147483646',
+        'pointer-events:none',
+        'opacity:1',
+        'transform:scale(1.08)',
+        'will-change:left,top,transform'
+    ].join(';');
+    capaDragSilabas().appendChild(ghost);
+    return ghost;
+}
+
+function moverGhostSilaba(ghost, clientX, clientY, offsetX, offsetY) {
+    if (!ghost) return;
+    ghost.style.left = `${clientX - offsetX}px`;
+    ghost.style.top = `${clientY - offsetY}px`;
 }
 
 function slotBajoPunto(x, y) {
@@ -1285,30 +1341,27 @@ function enlazarDragSilaba(el, { fichaId, origen, slotIdx = null }) {
 
 function onPointerMoveSilabas(event) {
     if (!dragSilabas || event.pointerId !== dragSilabas.pointerId) return;
-    const dx = event.clientX - dragSilabas.startX;
-    const dy = event.clientY - dragSilabas.startY;
+    // En algunos móviles clientX viene en 0: usar coords del toque
+    const x = event.clientX || event.touches?.[0]?.clientX || dragSilabas.startX;
+    const y = event.clientY || event.touches?.[0]?.clientY || dragSilabas.startY;
+    const dx = x - dragSilabas.startX;
+    const dy = y - dragSilabas.startY;
     if (!dragSilabas.moved && Math.hypot(dx, dy) < UMBRAL_DRAG_SILABA_PX) return;
 
     if (!dragSilabas.moved) {
         dragSilabas.moved = true;
         document.body.classList.add('silabas-dragging');
         dragSilabas.origenEl.classList.add('arrastrando');
-        const ghost = document.createElement('div');
-        ghost.className = 'ficha-silaba ficha-silaba-ghost';
-        ghost.textContent = textoFicha(dragSilabas.fichaId);
-        ghost.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(ghost);
-        dragSilabas.ghost = ghost;
+        dragSilabas.ghost = crearGhostSilaba(
+            dragSilabas.origenEl,
+            textoFicha(dragSilabas.fichaId)
+        );
     }
 
-    const g = dragSilabas.ghost;
-    if (g) {
-        g.style.left = `${event.clientX - dragSilabas.offsetX}px`;
-        g.style.top = `${event.clientY - dragSilabas.offsetY}px`;
-    }
+    moverGhostSilaba(dragSilabas.ghost, x, y, dragSilabas.offsetX, dragSilabas.offsetY);
 
     document.querySelectorAll('.slot-silaba.drag-over').forEach((s) => s.classList.remove('drag-over'));
-    const slot = slotBajoPunto(event.clientX, event.clientY);
+    const slot = slotBajoPunto(x, y);
     if (slot) slot.classList.add('drag-over');
 }
 
@@ -1316,10 +1369,12 @@ function onPointerUpSilabas(event) {
     if (!dragSilabas || event.pointerId !== dragSilabas.pointerId) return;
     const estado = dragSilabas;
     const { fichaId, origen, slotIdx, moved } = estado;
-    const x = event.clientX;
-    const y = event.clientY;
+    const x = event.clientX || event.changedTouches?.[0]?.clientX || estado.startX;
+    const y = event.clientY || event.changedTouches?.[0]?.clientY || estado.startY;
 
     estado.ghost?.remove();
+    const capa = document.getElementById('silabas-drag-layer');
+    if (capa && capa.childElementCount === 0) capa.remove();
     document.querySelectorAll('.slot-silaba.drag-over, .ficha-silaba.arrastrando, .slot-silaba.arrastrando')
         .forEach((el) => el.classList.remove('drag-over', 'arrastrando'));
     document.body.classList.remove('silabas-dragging');
@@ -1348,9 +1403,10 @@ function onPointerUpSilabas(event) {
     renderSilabas();
 }
 
-document.addEventListener('pointermove', onPointerMoveSilabas);
-document.addEventListener('pointerup', onPointerUpSilabas);
-document.addEventListener('pointercancel', onPointerUpSilabas);
+// capture:true — con setPointerCapture algunos móviles no burbujean bien a document
+document.addEventListener('pointermove', onPointerMoveSilabas, true);
+document.addEventListener('pointerup', onPointerUpSilabas, true);
+document.addEventListener('pointercancel', onPointerUpSilabas, true);
 
 function renderSilabas() {
     elZonas.innerHTML = '';
