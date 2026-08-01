@@ -1,8 +1,8 @@
 {
-  "buildId": "v17",
+  "buildId": "v18",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas: se ve la pieza mientras la arrastrás",
-    "El casillero destino se marca en naranja al pasar por arriba"
+    "Voz en el celular: restaurada como en las primeras versiones",
+    "Corregido un fallo de Chrome que silenciaba la síntesis en Android"
   ]
 }
