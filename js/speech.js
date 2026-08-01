@@ -7,6 +7,24 @@ let audioSets = null;
 let audioActual = null;
 /** Chrome/Android: si no hay referencia, el GC mata el utterance y no se oye nada. */
 let utteranceActual = null;
+let timerHablar = null;
+let timerWatchdog = null;
+/** Si el synth falla una vez en este dispositivo, preferimos Audio. */
+let preferirAudioRed = false;
+let audioDesbloqueado = false;
+
+const MAX_CHARS_TTS_RED = 180;
+const WATCHDOG_MS = 450;
+
+/** En táctil el speechSynthesis de Chrome/Android falla a menudo: Audio primero. */
+function esTactil() {
+    try {
+        if (window.matchMedia('(pointer: coarse)').matches) return true;
+    } catch {
+        // ignore
+    }
+    return Number(navigator.maxTouchPoints || 0) > 0;
+}
 
 /**
  * Selección como en la primera versión que andaba en móvil:
@@ -31,6 +49,17 @@ if (synth) {
     synth.onvoiceschanged = cargarVoces;
 }
 
+function limpiarTimers() {
+    if (timerHablar !== null) {
+        clearTimeout(timerHablar);
+        timerHablar = null;
+    }
+    if (timerWatchdog !== null) {
+        clearTimeout(timerWatchdog);
+        timerWatchdog = null;
+    }
+}
+
 /** Solo resume: un speak silencioso + cancel deja muda la voz en muchos Android. */
 function despertarSynth() {
     if (!synth) return;
@@ -41,14 +70,32 @@ function despertarSynth() {
     }
 }
 
+/** Desbloquea HTMLAudioElement tras el primer gesto (necesario en iOS/Android). */
+function desbloquearAudio() {
+    if (audioDesbloqueado) return;
+    audioDesbloqueado = true;
+    try {
+        const a = new Audio(
+            'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA='
+        );
+        a.volume = 0.01;
+        a.play().then(() => {
+            a.pause();
+        }).catch(() => {});
+    } catch {
+        // ignore
+    }
+}
+
 function instalarDespertarEnGesto() {
-    if (!synth) return;
     const wake = () => {
         despertarSynth();
         cargarVoces();
+        desbloquearAudio();
     };
     document.addEventListener('pointerdown', wake, true);
     document.addEventListener('touchstart', wake, true);
+    document.addEventListener('click', wake, true);
 }
 
 export async function initVoz() {
@@ -99,6 +146,7 @@ function detenerAudio() {
 }
 
 export function cancelarVoz() {
+    limpiarTimers();
     try {
         synth?.cancel();
     } catch {
@@ -108,56 +156,15 @@ export function cancelarVoz() {
     detenerAudio();
 }
 
-/**
- * Hablar con el mismo patrón que al principio:
- * cancel + SpeechSynthesisUtterance + lang es-ES + speak (síncrono).
- */
-function hablarNativo(texto, alTerminar, { rate = 0.85, pitch = 1.1 } = {}) {
-    if (!texto || !synth) {
-        alTerminar?.();
-        return;
-    }
-    if (!vozEspanola) cargarVoces();
-    despertarSynth();
-
-    // Como la v1: cancelar y hablar al toque, sin setTimeout.
-    try {
-        synth.cancel();
-    } catch {
-        // ignore
-    }
-
-    const utterance = new SpeechSynthesisUtterance(String(texto));
-    utteranceActual = utterance;
-    utterance.lang = 'es-ES';
-    // Solo forzar voice si es local: las de red fallan offline / en varios Android.
-    if (vozEspanola && vozEspanola.localService) {
-        utterance.voice = vozEspanola;
-        utterance.lang = vozEspanola.lang || 'es-ES';
-    }
-    utterance.rate = rate;
-    utterance.pitch = pitch;
-    const fin = () => {
-        if (utteranceActual === utterance) utteranceActual = null;
-        alTerminar?.();
-    };
-    utterance.onend = fin;
-    utterance.onerror = fin;
-    try {
-        synth.speak(utterance);
-        // Algunos Android quedan en paused tras cancel(); reanudar ayuda.
-        try {
-            if (synth.paused) synth.resume();
-        } catch {
-            // ignore
-        }
-    } catch {
-        fin();
-    }
+function urlTtsRed(texto) {
+    const q = encodeURIComponent(String(texto).slice(0, MAX_CHARS_TTS_RED));
+    // client=gtx suele responder bien desde <audio> en móviles.
+    return `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=es&q=${q}`;
 }
 
 function reproducirUrl(url, alTerminar) {
     detenerAudio();
+    desbloquearAudio();
     const audio = new Audio(url);
     audioActual = audio;
     const terminar = () => {
@@ -166,7 +173,140 @@ function reproducirUrl(url, alTerminar) {
     };
     audio.onended = terminar;
     audio.onerror = terminar;
-    audio.play().catch(terminar);
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(terminar);
+    }
+}
+
+function hablarPorAudioRed(texto, alTerminar) {
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
+    preferirAudioRed = true;
+    try {
+        synth?.cancel();
+    } catch {
+        // ignore
+    }
+    utteranceActual = null;
+    reproducirUrl(urlTtsRed(texto), alTerminar);
+}
+
+/**
+ * Hablar con speechSynthesis; si no arranca a tiempo, Audio (Google TTS).
+ */
+function hablarNativo(texto, alTerminar, { rate = 0.85, pitch = 1.1 } = {}) {
+    if (!texto) {
+        alTerminar?.();
+        return;
+    }
+
+    // Táctil / synth ya falló: Audio de red (fiable). Escritorio sigue con synth.
+    if (preferirAudioRed || !synth || esTactil()) {
+        hablarPorAudioRed(texto, alTerminar);
+        return;
+    }
+
+    if (!vozEspanola) cargarVoces();
+    despertarSynth();
+    limpiarTimers();
+    detenerAudio();
+
+    const habiaActiva = Boolean(synth.speaking || synth.pending);
+    if (habiaActiva) {
+        try {
+            synth.cancel();
+        } catch {
+            // ignore
+        }
+    }
+
+    const lanzar = () => {
+        timerHablar = null;
+        const utterance = new SpeechSynthesisUtterance(String(texto));
+        utteranceActual = utterance;
+        utterance.lang = VOZ.idiomaTTS || 'es-ES';
+        // Solo forzar voice si es local: las de red fallan offline / en varios Android.
+        if (vozEspanola && vozEspanola.localService) {
+            utterance.voice = vozEspanola;
+            utterance.lang = vozEspanola.lang || utterance.lang;
+        }
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+
+        let arranco = false;
+        let cerrado = false;
+        const marcarCerrado = () => {
+            if (cerrado) return false;
+            cerrado = true;
+            if (timerWatchdog !== null) {
+                clearTimeout(timerWatchdog);
+                timerWatchdog = null;
+            }
+            if (utteranceActual === utterance) utteranceActual = null;
+            return true;
+        };
+        const fin = () => {
+            if (!marcarCerrado()) return;
+            alTerminar?.();
+        };
+        const fallbackAudio = () => {
+            if (!marcarCerrado()) return;
+            preferirAudioRed = true;
+            try {
+                synth.cancel();
+            } catch {
+                // ignore
+            }
+            hablarPorAudioRed(texto, alTerminar);
+        };
+
+        utterance.onstart = () => {
+            arranco = true;
+            if (timerWatchdog !== null) {
+                clearTimeout(timerWatchdog);
+                timerWatchdog = null;
+            }
+        };
+        utterance.onend = fin;
+        utterance.onerror = () => {
+            // not-allowed / interrupted / synthesis: pasar a Audio si no llegó a oírse.
+            if (!arranco) {
+                fallbackAudio();
+                return;
+            }
+            fin();
+        };
+
+        try {
+            synth.speak(utterance);
+            try {
+                if (synth.paused) synth.resume();
+            } catch {
+                // ignore
+            }
+        } catch {
+            fallbackAudio();
+            return;
+        }
+
+        // Si no hay onstart a tiempo, el synth está mudo → Audio.
+        timerWatchdog = setTimeout(() => {
+            timerWatchdog = null;
+            if (arranco || cerrado) return;
+            fallbackAudio();
+        }, WATCHDOG_MS);
+    };
+
+    // Tras cancel(), Android a veces descarta el speak del mismo tick.
+    // Sticky activation del gesto sigue vigente unos cientos de ms.
+    if (habiaActiva) {
+        timerHablar = setTimeout(lanzar, 80);
+    } else {
+        lanzar();
+    }
 }
 
 function mensajeSlug(texto) {

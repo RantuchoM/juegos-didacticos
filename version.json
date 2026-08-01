@@ -1,8 +1,9 @@
 {
-  "buildId": "v20",
+  "buildId": "v21",
   "title": "¡Novedades!",
   "changes": [
-    "Voz en el celular: restaurada como en las primeras versiones",
-    "Corregido un fallo de Chrome que silenciaba la síntesis en Android"
+    "Voz en el celular: ahora usa audio si la síntesis del sistema no suena",
+    "Al tocar la pantalla se desbloquea el sonido para que se oiga al instante",
+    "Si el teléfono corta la voz, la app cambia sola al plan B"
   ]
 }
