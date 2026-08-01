@@ -1,9 +1,8 @@
 {
-  "buildId": "v13",
+  "buildId": "v14",
   "title": "¡Novedades!",
   "changes": [
-    "Voz en el celular: vuelve a hablar al tocar",
-    "Sílabas: el «¡Muy bien!» aparece aunque la voz falle",
-    "Más estable al pronunciar sílabas seguidas"
+    "Voz en el celular restaurada (como antes)",
+    "Sílabas: el «¡Muy bien!» sigue apareciendo al completar la palabra"
   ]
 }
