@@ -580,12 +580,20 @@ function crearObjetoItem(emoji, fontSize) {
     return span;
 }
 
-function renderObjetos(contenedor, emoji, cantidad) {
+/**
+ * Dibuja emojis; si hay más de 10, agrupa de a 10 (marco) + unidades sueltas.
+ * @param {string} [claseAgrupado='objetos-agrupados'] clase al contenedor cuando cantidad > 10
+ */
+function renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn, claseAgrupado = 'objetos-agrupados') {
     contenedor.innerHTML = '';
-    contenedor.classList.toggle('objetos-grid--agrupado', cantidad > 10);
+    if (claseAgrupado) {
+        contenedor.classList.toggle(claseAgrupado, cantidad > 10);
+    }
+
+    if (cantidad <= 0) return;
 
     if (cantidad <= 10) {
-        const fz = tamanioEmojiPorCantidad(cantidad);
+        const fz = tamanioFn(cantidad);
         for (let i = 0; i < cantidad; i++) {
             contenedor.appendChild(crearObjetoItem(emoji, fz));
         }
@@ -594,10 +602,10 @@ function renderObjetos(contenedor, emoji, cantidad) {
 
     const decenasCompletas = Math.floor(cantidad / 10);
     const unidades = cantidad % 10;
-    const fzDecena = tamanioEmojiPorCantidad(10);
+    const fzDecena = tamanioFn(10);
 
     for (let d = 0; d < decenasCompletas; d++) {
-        const grupo = document.createElement('div');
+        const grupo = document.createElement('span');
         grupo.className = 'objetos-decena marco-diez';
         grupo.setAttribute('aria-hidden', 'true');
         for (let i = 0; i < 10; i++) {
@@ -607,15 +615,21 @@ function renderObjetos(contenedor, emoji, cantidad) {
     }
 
     if (unidades > 0) {
-        const grupo = document.createElement('div');
+        const grupo = document.createElement('span');
         grupo.className = 'objetos-decena objetos-unidades';
         grupo.setAttribute('aria-hidden', 'true');
-        const fzUnidades = tamanioEmojiPorCantidad(unidades);
+        const fzUnidades = tamanioFn(unidades);
         for (let i = 0; i < unidades; i++) {
             grupo.appendChild(crearObjetoItem(emoji, fzUnidades));
         }
         contenedor.appendChild(grupo);
     }
+}
+
+function renderObjetos(contenedor, emoji, cantidad) {
+    renderObjetosAgrupados(
+        contenedor, emoji, cantidad, tamanioEmojiPorCantidad, 'objetos-grid--agrupado'
+    );
 }
 
 function numerosDistractores(correcto, cantidad, min, max) {
@@ -648,15 +662,7 @@ function generarRondaSuma(juegoId = 'sumar-escribir') {
 }
 
 function renderObjetosEn(contenedor, emoji, cantidad, tamanioFn) {
-    contenedor.innerHTML = '';
-    const fz = tamanioFn(cantidad);
-    for (let i = 0; i < cantidad; i++) {
-        const span = document.createElement('span');
-        span.className = 'objeto-item';
-        span.style.fontSize = fz;
-        span.textContent = emoji;
-        contenedor.appendChild(span);
-    }
+    renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn);
 }
 
 function montarPanelSuma(ronda, elObjA, elCantA, elObjB, elCantB) {
@@ -675,14 +681,6 @@ function tamanioEmojiResta(cantidad) {
     if (cantidad <= 12) return 'clamp(0.85rem, 3.8vw, 1.3rem)';
     if (cantidad <= 20) return 'clamp(0.72rem, 3.2vw, 1.1rem)';
     return 'clamp(0.58rem, 2.6vw, 0.9rem)';
-}
-
-function crearEmojiResta(emoji, cantidad) {
-    const span = document.createElement('span');
-    span.className = 'objeto-item';
-    span.style.fontSize = tamanioEmojiResta(cantidad);
-    span.textContent = emoji;
-    return span;
 }
 
 function generarRondaResta(juegoId = 'restar-escribir') {
@@ -708,16 +706,12 @@ function montarPanelResta(ronda, elVisual) {
 
     const elFuera = document.createElement('div');
     elFuera.className = 'resta-fuera';
-    for (let i = 0; i < fuera; i++) {
-        elFuera.appendChild(crearEmojiResta(emoji, fuera));
-    }
+    renderObjetosAgrupados(elFuera, emoji, fuera, tamanioEmojiResta);
 
     const elMarco = document.createElement('div');
     elMarco.className = 'resta-marco-menos';
     elMarco.setAttribute('aria-label', `${resta} para restar`);
-    for (let i = 0; i < resta; i++) {
-        elMarco.appendChild(crearEmojiResta(emoji, resta));
-    }
+    renderObjetosAgrupados(elMarco, emoji, resta, tamanioEmojiResta);
 
     elVisual.appendChild(elFuera);
     elVisual.appendChild(elMarco);
@@ -733,6 +727,7 @@ const juegoTeclado = document.getElementById('juego-teclado');
 const juegoSilabas = document.getElementById('juego-silabas');
 const juegoPalabraImagen = document.getElementById('juego-palabra-imagen');
 const juegoImagenPalabra = document.getElementById('juego-imagen-palabra');
+const juegoExplorar = document.getElementById('juego-explorar');
 const juegoContar = document.getElementById('juego-contar');
 const juegoVincular = document.getElementById('juego-vincular');
 const juegoEscribirNumero = document.getElementById('juego-escribir-numero');
@@ -742,13 +737,13 @@ const juegoSumarElegir = document.getElementById('juego-sumar-elegir');
 const juegoRestarEscribir = document.getElementById('juego-restar-escribir');
 
 const seccionesJuego = [
-    juegoTeclado, juegoSilabas, juegoPalabraImagen, juegoImagenPalabra,
+    juegoTeclado, juegoSilabas, juegoPalabraImagen, juegoImagenPalabra, juegoExplorar,
     juegoContar, juegoVincular, juegoEscribirNumero, juegoElegirNumero,
     juegoSumarEscribir, juegoSumarElegir, juegoRestarEscribir
 ];
 
 const RUTAS_JUEGO = new Set([
-    'teclado', 'silabas', 'palabra-imagen', 'imagen-palabra',
+    'teclado', 'silabas', 'palabra-imagen', 'imagen-palabra', 'explorar',
     'contar', 'vincular', 'escribir-numero', 'elegir-numero',
     'sumar-escribir', 'sumar-elegir', 'restar-escribir', 'aleatorio'
 ]);
@@ -804,6 +799,10 @@ function mostrarJuego(id) {
     if (id === 'imagen-palabra') {
         juegoImagenPalabra.classList.remove('oculto');
         iniciarImagenPalabra();
+    }
+    if (id === 'explorar') {
+        juegoExplorar.classList.remove('oculto');
+        iniciarExplorar();
     }
     if (id === 'contar') {
         juegoContar.classList.remove('oculto');
@@ -922,13 +921,6 @@ let textoActual = '';
 let longitudTecladoAnterior = 0;
 let tecladoHablarTimer = null;
 const TECLADO_FS_MIN = 18;
-
-(function iniciarRuta() {
-    const inicial = leerRutaDesdeHash();
-    history.replaceState({ app: 'juegos', juego: inicial }, '', urlParaRuta(inicial));
-    pilaJuegos = 0;
-    aplicarRuta(inicial);
-})();
 
 function filtrarTextoTeclado(texto) {
     return texto.replace(/[^a-zñáéíóúüA-ZÑÁÉÍÓÚÜ ]/g, '');
@@ -1517,6 +1509,48 @@ enlazarTactil('btn-ip-escuchar', () => {
     if (correctoIP !== null) hablar(PALABRAS[correctoIP].palabra);
 });
 
+// --- Lectura: Explorar catálogo ---
+const elExplorarCatalogo = document.getElementById('explorar-catalogo');
+let explorarMontado = false;
+
+function iniciarExplorar() {
+    if (!elExplorarCatalogo) return;
+    if (explorarMontado) {
+        elExplorarCatalogo.scrollTop = 0;
+        return;
+    }
+
+    const orden = [...PALABRAS].sort((a, b) =>
+        a.palabra.localeCompare(b.palabra, 'es', { sensitivity: 'base' })
+    );
+
+    elExplorarCatalogo.innerHTML = '';
+    orden.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'explorar-tarjeta';
+        btn.setAttribute('role', 'listitem');
+        btn.setAttribute('aria-label', `Escuchar ${item.palabra}`);
+
+        const dibujo = document.createElement('span');
+        dibujo.className = 'explorar-dibujo';
+        dibujo.setAttribute('aria-hidden', 'true');
+        renderImagenEn(dibujo, item);
+
+        const texto = document.createElement('span');
+        texto.className = 'explorar-palabra';
+        texto.textContent = item.palabra;
+
+        btn.appendChild(dibujo);
+        btn.appendChild(texto);
+        agregarActivacionTactil(btn, () => hablar(item.palabra));
+        elExplorarCatalogo.appendChild(btn);
+    });
+
+    explorarMontado = true;
+    elExplorarCatalogo.scrollTop = 0;
+}
+
 // --- Matemática 1: Contar ---
 let contarCantidad = 0;
 let contarEntrada = '';
@@ -1630,13 +1664,7 @@ function iniciarVincular() {
         panel.type = 'button';
         panel.className = 'vincular-objetos';
         panel.dataset.idx = i;
-        for (let j = 0; j < dato.cantidad; j++) {
-            const s = document.createElement('span');
-            s.className = 'objeto-item';
-            s.style.fontSize = tamanioEmojiVincular(dato.cantidad);
-            s.textContent = dato.emoji;
-            panel.appendChild(s);
-        }
+        renderObjetosAgrupados(panel, dato.emoji, dato.cantidad, tamanioEmojiVincular);
         agregarActivacionTactil(panel, () => seleccionarObjeto(i, panel));
         elVincularObjetos.appendChild(panel);
     });
@@ -2215,3 +2243,10 @@ function mostrarEjercicioAleatorio() {
 function entrarModoAleatorio() {
     irAJuego('aleatorio');
 }
+
+(function iniciarRuta() {
+    const inicial = leerRutaDesdeHash();
+    history.replaceState({ app: 'juegos', juego: inicial }, '', urlParaRuta(inicial));
+    pilaJuegos = 0;
+    aplicarRuta(inicial);
+})();

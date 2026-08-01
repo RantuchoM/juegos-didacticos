@@ -1,8 +1,8 @@
 {
-  "buildId": "v11",
+  "buildId": "v12",
   "title": "¡Novedades!",
   "changes": [
-    "Palabra: el spoiler ya no se mueve; es un velo fijo semitransparente",
-    "Menú más corto y botones −/+ para el tamaño del texto"
+    "Lectura: Explorar — catálogo de palabras con dibujo; tocá para escuchar",
+    "Matemática: grupos de 10 también en Unir, Sumar y Restar"
   ]
 }

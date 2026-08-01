@@ -51,6 +51,10 @@
                 <span class="emoji-menu">🖼️</span>
                 Imagen
             </button>
+            <button class="btn-juego" type="button" data-juego="explorar">
+                <span class="emoji-menu">📚</span>
+                Explorar
+            </button>
             <p class="menu-seccion">Matemática</p>
             <button class="btn-juego" type="button" data-juego="contar">
                 <span class="emoji-menu">🔢</span>
@@ -180,6 +184,23 @@
         <div id="ip-opciones" class="opciones-palabras"></div>
         <div id="ip-mensaje" class="mensaje-quiz"></div>
         <button type="button" id="btn-ip-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+    </section>
+
+    <!-- Lectura: Explorar catálogo -->
+    <section id="juego-explorar" class="pantalla-juego oculto">
+        <div class="lectura-top">
+            <button type="button" class="btn-volver" data-volver>← Volver</button>
+            <div class="lectura-header-acciones">
+                <div class="tamano-texto-grupo" role="group" aria-label="Tamaño del texto">
+                    <button type="button" class="btn-toggle-tamano" data-tamano-menos title="Texto más chico" aria-label="Texto más chico">−</button>
+                    <button type="button" class="btn-toggle-tamano" data-tamano-mas title="Texto más grande" aria-label="Texto más grande">+</button>
+                </div>
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+            </div>
+        </div>
+        <p class="explorar-ayuda">Tocá una tarjeta para escuchar la palabra</p>
+        <div id="explorar-catalogo" class="explorar-catalogo" role="list"></div>
     </section>
 
     <!-- Matemática 1: Contar -->

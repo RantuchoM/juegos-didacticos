@@ -531,3 +531,76 @@ body.modo-lectura-facil .spoiler-telegram {
     box-shadow: 0 15px 0 #a5d6a7;
     animation: pulso 0.5s ease;
 }
+
+/* --- Explorar catálogo --- */
+.explorar-ayuda {
+    margin: 0 0 clamp(6px, 1vh, 10px);
+    text-align: center;
+    color: #0277bd;
+    font-weight: 600;
+    font-size: calc(clamp(0.8rem, 2.5vw, 0.95rem) * var(--texto-escala, 1));
+    flex-shrink: 0;
+}
+
+.explorar-catalogo {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(42vw, 140px), 1fr));
+    gap: clamp(8px, 2vw, 12px);
+    align-content: start;
+    padding: 2px 2px 12px;
+}
+
+.explorar-tarjeta {
+    border: 5px solid #4fc3f7;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 6px 0 #b3e5fc;
+    cursor: pointer;
+    padding: clamp(8px, 1.5vh, 12px) 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(4px, 1vh, 8px);
+    min-height: clamp(110px, 28vw, 150px);
+    transition: transform 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.explorar-tarjeta:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #b3e5fc;
+}
+
+.explorar-dibujo {
+    font-size: clamp(2rem, 10vw, 3rem);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(48px, 14vw, 72px);
+}
+
+.explorar-dibujo svg {
+    width: clamp(48px, 14vw, 72px);
+    height: auto;
+    max-height: 72px;
+}
+
+.explorar-palabra {
+    font-size: calc(clamp(0.95rem, 3.8vw, 1.25rem) * var(--texto-escala, 1));
+    font-weight: 800;
+    color: #0288d1;
+    text-align: center;
+    line-height: 1.15;
+    text-transform: inherit;
+    word-break: break-word;
+}

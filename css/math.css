@@ -114,6 +114,54 @@
     background: #fff8e1;
 }
 
+/* Marcos de 10 en Unir / Sumar / Restar (misma lógica que Contar) */
+.suma-objetos.objetos-agrupados,
+.vincular-objetos.objetos-agrupados,
+.resta-fuera.objetos-agrupados,
+.resta-marco-menos.objetos-agrupados {
+    gap: clamp(4px, 0.8vh, 8px);
+    align-content: center;
+}
+
+.suma-objetos .objetos-decena,
+.vincular-objetos .objetos-decena,
+.resta-fuera .objetos-decena,
+.resta-marco-menos .objetos-decena {
+    padding: clamp(2px, 0.5vh, 5px);
+    border-width: 2px;
+    border-radius: 8px;
+}
+
+.suma-objetos .objetos-decena.marco-diez,
+.vincular-objetos .objetos-decena.marco-diez,
+.resta-fuera .objetos-decena.marco-diez,
+.resta-marco-menos .objetos-decena.marco-diez {
+    gap: 1px;
+}
+
+.suma-objetos .objetos-decena.objetos-unidades,
+.vincular-objetos .objetos-decena.objetos-unidades,
+.resta-fuera .objetos-decena.objetos-unidades,
+.resta-marco-menos .objetos-decena.objetos-unidades {
+    min-width: clamp(2rem, 8vw, 3.2rem);
+    min-height: clamp(1.6rem, 5vh, 2.4rem);
+}
+
+.suma-objetos.objetos-agrupados {
+    max-height: clamp(88px, 24vh, 140px);
+    overflow: auto;
+}
+
+.vincular-objetos.objetos-agrupados {
+    overflow: auto;
+}
+
+.resta-fuera.objetos-agrupados,
+.resta-marco-menos.objetos-agrupados {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 .teclado-numerico {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
