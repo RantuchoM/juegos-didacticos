@@ -1,6 +1,8 @@
 import { PALABRAS } from './data/palabras.js';
 import {
-    MSG_CASI, MSG_BIEN, MSG_CINCO_EJERCICIOS,
+    MSG_CASI, MSG_BIEN, MSG_TIEMPO, MSG_CINCO_EJERCICIOS,
+    CAMION_TIEMPO_MS, CAMION_CAMBIO_VELOCIDAD, CAMION_BONUS_MAX, CAMION_TIEMPO_MIN_MS,
+    FUTBOL_TIMER_INICIAL, FUTBOL_TIMER_MIN, FUTBOL_TIMER_MAX,
     VINCULAR_GRUPOS, VINCULAR_NUMEROS_SIN_PAR, EMOJIS_CONTAR,
     MIN_SILABAS_JUEGO,
     JUEGOS_ALEATORIOS, IDS_SIGUIENTE, AUTO_SIGUIENTE_MS,
@@ -39,11 +41,11 @@ function mostrarCelebracionCinco() {
     sonidoTriunfoCinco();
 }
 
-function registrarEjercicioCompletado() {
+function registrarEjercicioCompletado({ silencio = false } = {}) {
     ejerciciosCompletados++;
     if (ejerciciosCompletados % 5 === 0) {
         setTimeout(mostrarCelebracionCinco, 400);
-    } else {
+    } else if (!silencio) {
         sonidoFestejoEjercicio();
     }
 }
@@ -55,6 +57,8 @@ let lecturaFacil = localStorage.getItem('lecturaFacil') === '1';
 let spoilerImagenes = localStorage.getItem('spoilerImagenes') === '1';
 /** Imagen→Palabra: si true, las opciones incluyen palabras parecidas (más difícil). */
 let ipPalabrasSimilares = localStorage.getItem('ipPalabrasSimilares') !== '0';
+/** Sílabas: fichas de más en el pool (modo difícil). */
+let silabasDistractores = localStorage.getItem('silabasDistractores') === '1';
 /** Si es false, Teclado solo habla al apretar el botón 🔊. */
 let tecladoAutoVoz = localStorage.getItem('tecladoAutoVoz') === '1';
 
@@ -81,6 +85,9 @@ function aplicarTextoEscala() {
     if (typeof ajustarTamanoFuenteTeclado === 'function') {
         requestAnimationFrame(() => ajustarTamanoFuenteTeclado());
     }
+    if (typeof ajustarTamanoPalabraCamion === 'function') {
+        requestAnimationFrame(() => ajustarTamanoPalabraCamion());
+    }
 }
 
 function cambiarTextoEscala(delta) {
@@ -103,6 +110,9 @@ function aplicarModoLetras() {
     });
     if (typeof ajustarTamanoFuenteTeclado === 'function') {
         requestAnimationFrame(() => ajustarTamanoFuenteTeclado());
+    }
+    if (typeof ajustarTamanoPalabraCamion === 'function') {
+        requestAnimationFrame(() => ajustarTamanoPalabraCamion());
     }
 }
 
@@ -153,13 +163,13 @@ function alternarSpoilerImagenes() {
 }
 
 function aplicarIpPalabrasSimilares() {
-    const btn = document.getElementById('btn-ip-similares');
-    if (!btn) return;
-    btn.classList.toggle('activo', ipPalabrasSimilares);
-    btn.setAttribute('aria-pressed', ipPalabrasSimilares ? 'true' : 'false');
-    btn.title = ipPalabrasSimilares
-        ? 'Difícil: palabras parecidas — tocá para modo fácil'
-        : 'Fácil: palabras distintas — tocá para modo difícil';
+    document.querySelectorAll('#btn-ip-similares, #btn-futbol-similares').forEach((btn) => {
+        btn.classList.toggle('activo', ipPalabrasSimilares);
+        btn.setAttribute('aria-pressed', ipPalabrasSimilares ? 'true' : 'false');
+        btn.title = ipPalabrasSimilares
+            ? 'Difícil: palabras parecidas — tocá para modo fácil'
+            : 'Fácil: palabras distintas — tocá para modo difícil';
+    });
 }
 
 function alternarIpPalabrasSimilares() {
@@ -169,6 +179,63 @@ function alternarIpPalabrasSimilares() {
     if (!juegoImagenPalabra.classList.contains('oculto') && correctoIP !== null) {
         cargarImagenPalabra();
     }
+    if (juegoFutbol && !juegoFutbol.classList.contains('oculto') && correctoFutbol !== null) {
+        cargarFutbol();
+    }
+}
+
+function aplicarSilabasDistractores() {
+    const btn = document.getElementById('btn-silabas-distractores');
+    if (!btn) return;
+    btn.classList.toggle('activo', silabasDistractores);
+    btn.setAttribute('aria-pressed', silabasDistractores ? 'true' : 'false');
+    btn.title = silabasDistractores
+        ? 'Difícil: sílabas de más — tocá para modo fácil'
+        : 'Fácil: solo las sílabas de la palabra — tocá para modo difícil';
+}
+
+function alternarSilabasDistractores() {
+    silabasDistractores = !silabasDistractores;
+    localStorage.setItem('silabasDistractores', silabasDistractores ? '1' : '0');
+    aplicarSilabasDistractores();
+    if (!juegoSilabas.classList.contains('oculto') && palabraActual) {
+        cargarPalabra();
+    }
+}
+
+/**
+ * Sílabas confusas: prioriza parecidas (misma inicial / largo) del catálogo.
+ * No repite textos que ya usa la palabra.
+ */
+function elegirSilabasDistractores(palabra, cantidad) {
+    const prohibidas = new Set(
+        palabra.silabas.map((s) => s.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('es'))
+    );
+    const clave = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('es');
+    const pool = [];
+    const vistos = new Set();
+    for (const p of PALABRAS) {
+        if (p === palabra) continue;
+        for (const s of p.silabas) {
+            const k = clave(s);
+            if (prohibidas.has(k) || vistos.has(k)) continue;
+            vistos.add(k);
+            pool.push(s);
+        }
+    }
+    const iniciales = new Set(palabra.silabas.map((s) => clave(s)[0]));
+    const largos = palabra.silabas.map((s) => s.length);
+    const score = (s) => {
+        const k = clave(s);
+        let n = 0;
+        if (iniciales.has(k[0])) n += 2;
+        if (largos.some((l) => Math.abs(l - s.length) <= 1)) n += 1;
+        return n;
+    };
+    pool.sort((a, b) => score(b) - score(a) || Math.random() - 0.5);
+    const top = pool.filter((s) => score(s) > 0);
+    const fuente = mezclar(top.length >= cantidad ? top : pool);
+    return fuente.slice(0, Math.max(0, cantidad));
 }
 
 function aplicarTecladoAutoVoz() {
@@ -201,6 +268,8 @@ document.querySelectorAll('[data-toggle-spoiler]').forEach((btn) => {
     btn.addEventListener('click', alternarSpoilerImagenes);
 });
 document.getElementById('btn-ip-similares')?.addEventListener('click', alternarIpPalabrasSimilares);
+document.getElementById('btn-futbol-similares')?.addEventListener('click', alternarIpPalabrasSimilares);
+document.getElementById('btn-silabas-distractores')?.addEventListener('click', alternarSilabasDistractores);
 document.querySelectorAll('[data-tamano-menos]').forEach((btn) => {
     btn.addEventListener('click', () => cambiarTextoEscala(-1));
 });
@@ -212,6 +281,7 @@ aplicarModoLetras();
 aplicarLecturaFacil();
 aplicarSpoilerImagenes();
 aplicarIpPalabrasSimilares();
+aplicarSilabasDistractores();
 aplicarTecladoAutoVoz();
 aplicarTextoEscala();
 
@@ -335,11 +405,229 @@ function sonidoIncorrecto() {
     osc.stop(ctx.currentTime + 0.35);
 }
 
-/** Muestra feedback ok/mal sin dejar ambas clases (mal gana en CSS y dejaba «¡Muy bien!» en rojo). */
-function mostrarFeedback(el, texto, tipo) {
-    el.textContent = texto;
-    el.classList.remove('ok', 'mal');
-    el.classList.add(tipo);
+/** MP3 reales (precache en sw.js); si fallan, se usa el sintetizador. */
+const FUTBOL_SFX = {
+    gol: 'audio/efectos/gol.mp3',
+    error: 'audio/efectos/hinchada-error.mp3'
+};
+const FUTBOL_SFX_MAX_MS = { gol: 2500, error: 3800 };
+
+let audioFutbolSfx = null;
+let futbolSfxPrecargados = false;
+/** Buffer de ruido reutilizable para fallback sintético. */
+let bufferRuidoFutbol = null;
+
+function precargarSfxFutbol() {
+    if (futbolSfxPrecargados) return;
+    futbolSfxPrecargados = true;
+    Object.values(FUTBOL_SFX).forEach((url) => {
+        const a = new Audio();
+        a.preload = 'auto';
+        a.src = url;
+    });
+}
+
+function obtenerRuidoFutbol(ctx, segundos) {
+    const muestras = Math.max(1, Math.floor(ctx.sampleRate * segundos));
+    if (bufferRuidoFutbol && bufferRuidoFutbol.sampleRate === ctx.sampleRate
+        && bufferRuidoFutbol.length >= muestras) {
+        return bufferRuidoFutbol;
+    }
+    const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 3.5), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    bufferRuidoFutbol = buffer;
+    return buffer;
+}
+
+function reproducirMp3Futbol(url, maxMs, fallback) {
+    try {
+        if (audioFutbolSfx) {
+            audioFutbolSfx.pause();
+            audioFutbolSfx.src = '';
+            audioFutbolSfx = null;
+        }
+        const audio = new Audio(url);
+        audio.volume = 1;
+        audioFutbolSfx = audio;
+        let cerrado = false;
+        let usoFallback = false;
+        const fin = () => {
+            if (cerrado) return;
+            cerrado = true;
+            if (audioFutbolSfx === audio) audioFutbolSfx = null;
+        };
+        const fallar = () => {
+            if (usoFallback || cerrado) return;
+            usoFallback = true;
+            try { audio.pause(); } catch { /* ignore */ }
+            fin();
+            fallback?.();
+        };
+        audio.addEventListener('ended', fin);
+        audio.addEventListener('error', fallar);
+        // Previews rotos a veces “reproducen” en silencio (~0 s): usar respaldo.
+        audio.addEventListener('loadedmetadata', () => {
+            if (!(audio.duration > 0.4)) fallar();
+        });
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(fallar);
+        }
+        if (maxMs > 0) {
+            setTimeout(() => {
+                if (!cerrado && audioFutbolSfx === audio) {
+                    try { audio.pause(); } catch { /* ignore */ }
+                    fin();
+                }
+            }, maxMs);
+        }
+    } catch {
+        fallback?.();
+    }
+}
+
+/** Fallback sintético: golpe + hinchada festejando. */
+function sonidoGolFutbolSintetico() {
+    const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
+    const t = ctx.currentTime;
+
+    const golpe = ctx.createOscillator();
+    const golpeGain = ctx.createGain();
+    golpe.type = 'sine';
+    golpe.frequency.setValueAtTime(160, t);
+    golpe.frequency.exponentialRampToValueAtTime(48, t + 0.16);
+    golpeGain.gain.setValueAtTime(0.5, t);
+    golpeGain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    golpe.connect(golpeGain);
+    golpeGain.connect(ctx.destination);
+    golpe.start(t);
+    golpe.stop(t + 0.18);
+
+    const ruido = ctx.createBufferSource();
+    ruido.buffer = obtenerRuidoFutbol(ctx, 2.6);
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 0.9;
+    bp.frequency.setValueAtTime(350, t);
+    bp.frequency.exponentialRampToValueAtTime(1400, t + 0.7);
+    bp.frequency.exponentialRampToValueAtTime(1000, t + 1.6);
+    bp.frequency.exponentialRampToValueAtTime(700, t + 2.4);
+    const crowdGain = ctx.createGain();
+    crowdGain.gain.setValueAtTime(0.001, t);
+    crowdGain.gain.exponentialRampToValueAtTime(0.28, t + 0.12);
+    crowdGain.gain.setValueAtTime(0.26, t + 1.2);
+    crowdGain.gain.setValueAtTime(0.18, t + 1.9);
+    crowdGain.gain.exponentialRampToValueAtTime(0.01, t + 2.55);
+    ruido.connect(bp);
+    bp.connect(crowdGain);
+    crowdGain.connect(ctx.destination);
+    ruido.start(t);
+    ruido.stop(t + 2.6);
+
+    [659, 784, 1047, 1319].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const ti = t + 0.12 + i * 0.1;
+        gain.gain.setValueAtTime(0.2, ti);
+        gain.gain.exponentialRampToValueAtTime(0.01, ti + 0.35);
+        osc.start(ti);
+        osc.stop(ti + 0.35);
+    });
+}
+
+/** Fallback sintético: hinchada lamentándose. */
+function sonidoHinchadaFutbolSintetico() {
+    const ctx = getAudio();
+    reanudarAudioSiHaceFalta(ctx);
+    const t = ctx.currentTime;
+
+    const ruido = ctx.createBufferSource();
+    ruido.buffer = obtenerRuidoFutbol(ctx, 2.5);
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.1;
+    bp.frequency.setValueAtTime(900, t);
+    bp.frequency.exponentialRampToValueAtTime(280, t + 1.4);
+    bp.frequency.exponentialRampToValueAtTime(180, t + 2.2);
+    const crowdGain = ctx.createGain();
+    crowdGain.gain.setValueAtTime(0.001, t);
+    crowdGain.gain.exponentialRampToValueAtTime(0.24, t + 0.1);
+    crowdGain.gain.setValueAtTime(0.2, t + 1.0);
+    crowdGain.gain.setValueAtTime(0.14, t + 1.7);
+    crowdGain.gain.exponentialRampToValueAtTime(0.01, t + 2.4);
+    ruido.connect(bp);
+    bp.connect(crowdGain);
+    crowdGain.connect(ctx.destination);
+    ruido.start(t);
+    ruido.stop(t + 2.5);
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(280, t + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 1.6);
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.frequency.value = 600;
+    osc.connect(filtro);
+    filtro.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.12);
+    gain.gain.setValueAtTime(0.08, t + 1.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.8);
+    osc.start(t);
+    osc.stop(t + 1.85);
+}
+
+function sonidoGolFutbol() {
+    reproducirMp3Futbol(FUTBOL_SFX.gol, FUTBOL_SFX_MAX_MS.gol, sonidoGolFutbolSintetico);
+}
+
+function sonidoHinchadaFutbol() {
+    reproducirMp3Futbol(FUTBOL_SFX.error, FUTBOL_SFX_MAX_MS.error, sonidoHinchadaFutbolSintetico);
+}
+
+const elFeedbackToast = document.getElementById('feedback-toast');
+const FEEDBACK_MAL_MS = 2200;
+let feedbackTimer = null;
+
+/** Aviso flotante global: no forma parte del layout de cada juego. */
+function mostrarFeedback(_el, texto, tipo) {
+    if (!elFeedbackToast) return;
+    if (feedbackTimer !== null) {
+        clearTimeout(feedbackTimer);
+        feedbackTimer = null;
+    }
+    elFeedbackToast.textContent = texto;
+    elFeedbackToast.classList.remove('oculto', 'ok', 'mal');
+    elFeedbackToast.classList.add(tipo);
+    // «¡Casi!» se va solo; «¡Muy bien!» dura hasta el siguiente / cambio de ronda.
+    if (tipo === 'mal') {
+        feedbackTimer = setTimeout(() => {
+            feedbackTimer = null;
+            ocultarFeedback();
+        }, FEEDBACK_MAL_MS);
+    }
+}
+
+function ocultarFeedback() {
+    if (feedbackTimer !== null) {
+        clearTimeout(feedbackTimer);
+        feedbackTimer = null;
+    }
+    if (!elFeedbackToast) return;
+    elFeedbackToast.textContent = '';
+    elFeedbackToast.classList.add('oculto');
+    elFeedbackToast.classList.remove('ok', 'mal');
 }
 
 /** Toque fiable en táctil: distingue tap de scroll y evita doble disparo. */
@@ -921,6 +1209,8 @@ const juegoSilabas = document.getElementById('juego-silabas');
 const juegoPalabraImagen = document.getElementById('juego-palabra-imagen');
 const juegoImagenPalabra = document.getElementById('juego-imagen-palabra');
 const juegoExplorar = document.getElementById('juego-explorar');
+const juegoCamion = document.getElementById('juego-camion');
+const juegoFutbol = document.getElementById('juego-futbol');
 const juegoContar = document.getElementById('juego-contar');
 const juegoVincular = document.getElementById('juego-vincular');
 const juegoEscribirNumero = document.getElementById('juego-escribir-numero');
@@ -930,13 +1220,14 @@ const juegoSumarElegir = document.getElementById('juego-sumar-elegir');
 const juegoRestarEscribir = document.getElementById('juego-restar-escribir');
 
 const seccionesJuego = [
-    juegoTeclado, juegoSilabas, juegoPalabraImagen, juegoImagenPalabra, juegoExplorar,
+    juegoTeclado, juegoSilabas, juegoPalabraImagen, juegoImagenPalabra, juegoExplorar, juegoCamion,
+    juegoFutbol,
     juegoContar, juegoVincular, juegoEscribirNumero, juegoElegirNumero,
     juegoSumarEscribir, juegoSumarElegir, juegoRestarEscribir
 ];
 
 const RUTAS_JUEGO = new Set([
-    'teclado', 'silabas', 'palabra-imagen', 'imagen-palabra', 'explorar',
+    'teclado', 'silabas', 'palabra-imagen', 'imagen-palabra', 'explorar', 'camion', 'futbol',
     'contar', 'vincular', 'escribir-numero', 'elegir-numero',
     'sumar-escribir', 'sumar-elegir', 'restar-escribir', 'aleatorio'
 ]);
@@ -992,6 +1283,9 @@ function actualizarNombreJuego(id) {
 function mostrarJuego(id) {
     if (id !== 'aleatorio') modoAleatorio = false;
     cancelarAutoSiguiente();
+    ocultarFeedback();
+    detenerCamion();
+    detenerFutbol();
     desactivarEntradaNumerica();
     desactivarTecladoMat();
     menu.classList.add('oculto');
@@ -1020,6 +1314,14 @@ function mostrarJuego(id) {
     if (id === 'explorar') {
         juegoExplorar.classList.remove('oculto');
         iniciarExplorar();
+    }
+    if (id === 'camion') {
+        juegoCamion.classList.remove('oculto');
+        iniciarCamion();
+    }
+    if (id === 'futbol') {
+        juegoFutbol.classList.remove('oculto');
+        iniciarFutbol();
     }
     if (id === 'contar') {
         juegoContar.classList.remove('oculto');
@@ -1053,10 +1355,13 @@ function mostrarJuego(id) {
 
 function mostrarMenuUI() {
     cancelarAutoSiguiente();
+    detenerCamion();
+    detenerFutbol();
     modoAleatorio = false;
     cancelarHablarTecladoProgramado();
     cancelarVoz();
     cerrarCelebracion();
+    ocultarFeedback();
     desactivarEntradaNumerica();
     desactivarTecladoMat();
     menu.classList.remove('oculto');
@@ -1294,6 +1599,7 @@ pantalla.addEventListener('keydown', (event) => {
 
 window.addEventListener('resize', () => {
     if (!juegoTeclado.classList.contains('oculto')) ajustarTamanoFuenteTeclado();
+    if (typeof ajustarTamanoPalabraCamion === 'function') ajustarTamanoPalabraCamion();
 });
 
 document.addEventListener('keydown', (event) => {
@@ -1463,8 +1769,7 @@ function cargarPalabra() {
     limpiarDragSilabas();
     bloqueado = false;
     btnSiguiente.classList.add('oculto');
-    elMensaje.textContent = '';
-    elMensaje.className = 'mensaje-silabas';
+    ocultarFeedback();
     elImagen.classList.remove('acierto', 'error');
 
     palabraActual = PALABRAS[colaPalabras[indiceActual]];
@@ -1472,6 +1777,14 @@ function cargarPalabra() {
     renderImagenEn(elImagen, palabraActual);
 
     fichas = palabraActual.silabas.map((texto, id) => ({ id, texto, usada: false }));
+    if (silabasDistractores) {
+        const nExtra = Math.min(4, Math.max(2, palabraActual.silabas.length));
+        const extras = elegirSilabasDistractores(palabraActual, nExtra);
+        const baseId = fichas.length;
+        extras.forEach((texto, i) => {
+            fichas.push({ id: baseId + i, texto, usada: false, distractor: true });
+        });
+    }
     fichas = mezclar(fichas);
     slots = new Array(palabraActual.silabas.length).fill(null);
 
@@ -1877,8 +2190,7 @@ function cargarPalabraImagen() {
     bloqueadoPI = false;
     spoilerReveladoPI = !spoilerImagenes;
     btnPISiguiente.classList.add('oculto');
-    elPIMensaje.textContent = '';
-    elPIMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
 
     correctoPI = colaPI[indicePI];
     const item = PALABRAS[correctoPI];
@@ -1954,8 +2266,7 @@ function iniciarImagenPalabra() {
 function cargarImagenPalabra() {
     bloqueadoIP = false;
     btnIPSiguiente.classList.add('oculto');
-    elIPMensaje.textContent = '';
-    elIPMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     elIPImagen.classList.remove('acierto');
 
     correctoIP = colaIP[indiceIP];
@@ -2007,6 +2318,1001 @@ enlazarTactil('btn-ip-escuchar', () => {
     if (correctoIP !== null) hablar(PALABRAS[correctoIP].palabra);
 });
 
+// --- Lectura: Camión (rumbo libre mientras avanza) ---
+/** Posiciones de los 3 carriles (%). En horizontal = top; en vertical = left. */
+const CAMION_CARRILES = [18, 50, 82];
+/** Arranca en el hueco entre el 1.er y el 2.º carril. */
+const CAMION_CARRIL_INICIO = (CAMION_CARRILES[0] + CAMION_CARRILES[1]) / 2;
+const CAMION_CARRIL_MIN = 14;
+const CAMION_CARRIL_MAX = 86;
+/** Distancia máxima (% de pista) para considerar que entró a un camino. */
+const CAMION_TOLERANCIA_CAMINO = 8;
+/** Avance horizontal: izquierda → derecha. */
+const CAMION_H_AVANCE_INICIO = 3;
+const CAMION_H_AVANCE_CRUCE = 58;
+const CAMION_H_AVANCE_LLEGADA = 78;
+/** Avance vertical: abajo → arriba (top % decrece). */
+const CAMION_V_AVANCE_INICIO = 88;
+const CAMION_V_AVANCE_CRUCE = 42;
+const CAMION_V_AVANCE_LLEGADA = 20;
+/** Velocidad de rumbo al mantener el botón (% de la pista por segundo). */
+const CAMION_VEL_RUMBO = 58;
+
+let colaCamion = [];
+let indiceCamion = 0;
+let bloqueadoCamion = false;
+let correctoCamion = null;
+/** Aciertos seguidos (se resetea al fallar). */
+let aciertosCamion = 0;
+/** Bonus de velocidad 0…CAMION_BONUS_MAX (+4 % por acierto, −4 % por error). */
+let bonusVelocidadCamion = 0;
+let camionDuracionMs = CAMION_TIEMPO_MS;
+let timerLlegadaCamion = null;
+let rafCamion = null;
+let camionInicioMs = 0;
+let camionUltimoTickMs = 0;
+let camionCarrilActual = CAMION_CARRIL_INICIO;
+let camionAvanceActual = CAMION_H_AVANCE_INICIO;
+/** Vista vertical (abajo→arriba). */
+let camionEsVertical = false;
+/** -1 / 0 / 1 según rumbo (arriba/izq o abajo/der). */
+let camionRumbo = 0;
+let camionArrastrando = false;
+let camionTeclasRumbo = { arriba: false, abajo: false };
+let camionControlesListos = false;
+
+const elCamionMundo = document.getElementById('camion-mundo');
+const elCamionVehiculo = document.getElementById('camion-vehiculo');
+const elCamionPalabra = document.getElementById('camion-palabra');
+const elCamionDestinos = document.getElementById('camion-destinos');
+const elCamionMensaje = document.getElementById('camion-mensaje');
+const elCamionAciertos = document.getElementById('camion-aciertos');
+const elCamionAyuda = document.getElementById('camion-ayuda');
+const btnCamionSiguiente = document.getElementById('btn-camion-siguiente');
+const btnCamionArriba = document.getElementById('btn-camion-arriba');
+const btnCamionAbajo = document.getElementById('btn-camion-abajo');
+
+function camionMediaVertical() {
+    return window.matchMedia('(orientation: portrait), (max-aspect-ratio: 3/4)').matches;
+}
+
+function sincronizarOrientacionCamion() {
+    camionEsVertical = camionMediaVertical();
+    elCamionMundo?.classList.toggle('camion-vertical', camionEsVertical);
+    if (elCamionAyuda) {
+        elCamionAyuda.textContent = camionEsVertical
+            ? 'Mové a izquierda o derecha para cambiar el rumbo'
+            : 'Subí o bajá para cambiar el rumbo del camión';
+    }
+    if (btnCamionArriba) {
+        btnCamionArriba.textContent = camionEsVertical ? '◀' : '▲';
+        btnCamionArriba.setAttribute('aria-label', camionEsVertical ? 'Izquierda' : 'Subir');
+    }
+    if (btnCamionAbajo) {
+        btnCamionAbajo.textContent = camionEsVertical ? '▶' : '▼';
+        btnCamionAbajo.setAttribute('aria-label', camionEsVertical ? 'Derecha' : 'Bajar');
+    }
+}
+
+function camionAvanceInicio() {
+    return camionEsVertical ? CAMION_V_AVANCE_INICIO : CAMION_H_AVANCE_INICIO;
+}
+
+function camionAvanceCruce() {
+    return camionEsVertical ? CAMION_V_AVANCE_CRUCE : CAMION_H_AVANCE_CRUCE;
+}
+
+function camionAvanceLlegada() {
+    return camionEsVertical ? CAMION_V_AVANCE_LLEGADA : CAMION_H_AVANCE_LLEGADA;
+}
+
+function tiempoCamionActual() {
+    const factor = 1 - bonusVelocidadCamion;
+    return Math.max(CAMION_TIEMPO_MIN_MS, Math.round(CAMION_TIEMPO_MS * factor));
+}
+
+function actualizarMarcadorCamion() {
+    if (!elCamionAciertos) return;
+    const pct = Math.round(bonusVelocidadCamion * 100);
+    const extra = pct > 0 ? ` · +${pct}% vel.` : '';
+    elCamionAciertos.textContent = `Correctas: ${aciertosCamion}${extra}`;
+    elCamionAciertos.classList.toggle('subio-velocidad', bonusVelocidadCamion > 0);
+}
+
+function detenerCamion() {
+    if (rafCamion !== null) {
+        cancelAnimationFrame(rafCamion);
+        rafCamion = null;
+    }
+    if (timerLlegadaCamion !== null) {
+        clearTimeout(timerLlegadaCamion);
+        timerLlegadaCamion = null;
+    }
+    camionRumbo = 0;
+    camionArrastrando = false;
+    camionTeclasRumbo.arriba = false;
+    camionTeclasRumbo.abajo = false;
+    btnCamionArriba?.classList.remove('pulsado');
+    btnCamionAbajo?.classList.remove('pulsado');
+    if (elCamionMundo) {
+        elCamionMundo.classList.remove('rama-activa-0', 'rama-activa-1', 'rama-activa-2');
+    }
+    if (elCamionVehiculo) {
+        elCamionVehiculo.classList.remove('llegando');
+        elCamionVehiculo.style.left = '';
+        elCamionVehiculo.style.top = '';
+        elCamionVehiculo.style.transform = '';
+        elCamionVehiculo.style.transition = '';
+    }
+}
+
+function iniciarCamion() {
+    colaCamion = mezclar(PALABRAS.map((_, i) => i));
+    indiceCamion = 0;
+    aciertosCamion = 0;
+    bonusVelocidadCamion = 0;
+    actualizarMarcadorCamion();
+    cargarCamion();
+}
+
+/** Slot alineado con un camino, o null si está en el hueco entre ellos. */
+function slotCamionAlineado() {
+    let mejor = null;
+    let mejorDist = Infinity;
+    for (let i = 0; i < CAMION_CARRILES.length; i++) {
+        const d = Math.abs(camionCarrilActual - CAMION_CARRILES[i]);
+        if (d < mejorDist) {
+            mejorDist = d;
+            mejor = i;
+        }
+    }
+    if (mejor === null || mejorDist > CAMION_TOLERANCIA_CAMINO) return null;
+    return mejor;
+}
+
+function actualizarRumboVisual() {
+    const slot = slotCamionAlineado();
+    if (elCamionMundo) {
+        elCamionMundo.classList.remove('rama-activa-0', 'rama-activa-1', 'rama-activa-2');
+        if (slot !== null) elCamionMundo.classList.add(`rama-activa-${slot}`);
+    }
+    elCamionDestinos?.querySelectorAll('.camion-destino').forEach((el) => {
+        el.classList.toggle('rumbo', slot !== null && Number(el.dataset.slot) === slot);
+    });
+}
+
+function registrarFalloCamion(destinos, btnIncorrecto) {
+    if (btnIncorrecto) btnIncorrecto.classList.add('incorrecta');
+    const correctoBtn = destinos.find((b) => Number(b.dataset.idx) === correctoCamion);
+    if (correctoBtn) correctoBtn.classList.add('correcta');
+    aciertosCamion = 0;
+    const antes = bonusVelocidadCamion;
+    bonusVelocidadCamion = Math.max(0, bonusVelocidadCamion - CAMION_CAMBIO_VELOCIDAD);
+    const bajo = bonusVelocidadCamion < antes;
+    actualizarMarcadorCamion();
+    mostrarFeedback(elCamionMensaje, bajo ? `${MSG_CASI} Más despacio` : MSG_CASI, 'mal');
+    sonidoIncorrecto();
+    hablar(PALABRAS[correctoCamion].palabra);
+}
+
+function pintarCamion() {
+    if (!elCamionVehiculo) return;
+    const inclinacion = camionRumbo * -10;
+    if (camionEsVertical) {
+        elCamionVehiculo.style.left = `${camionCarrilActual}%`;
+        elCamionVehiculo.style.top = `${camionAvanceActual}%`;
+        elCamionVehiculo.style.transform = `translate(-50%, -50%) rotate(${-90 + inclinacion}deg)`;
+    } else {
+        elCamionVehiculo.style.left = `${camionAvanceActual}%`;
+        elCamionVehiculo.style.top = `${camionCarrilActual}%`;
+        elCamionVehiculo.style.transform = `translateY(-50%) rotate(${inclinacion}deg)`;
+    }
+}
+
+function ajustarTamanoPalabraCamion() {
+    if (!elCamionPalabra || !elCamionMundo) return;
+    if (juegoCamion.classList.contains('oculto')) return;
+
+    const escala = getTextoEscala();
+    const maxFs = Math.round(20 * escala);
+    const minFs = Math.max(10, Math.round(11 * escala));
+    elCamionPalabra.style.fontSize = `${maxFs}px`;
+
+    const frac = camionEsVertical ? 0.36 : 0.48;
+    const anchoMax = Math.max(72, Math.floor(elCamionMundo.clientWidth * frac));
+    elCamionPalabra.style.maxWidth = `${anchoMax}px`;
+
+    let fs = maxFs;
+    while (fs > minFs && elCamionPalabra.scrollWidth > anchoMax - 8) {
+        fs -= 1;
+        elCamionPalabra.style.fontSize = `${fs}px`;
+    }
+}
+
+function sincronizarRumboDesdeTeclas() {
+    if (camionTeclasRumbo.arriba && !camionTeclasRumbo.abajo) camionRumbo = -1;
+    else if (camionTeclasRumbo.abajo && !camionTeclasRumbo.arriba) camionRumbo = 1;
+    else if (!camionTeclasRumbo.arriba && !camionTeclasRumbo.abajo && !camionArrastrando) camionRumbo = 0;
+}
+
+function juegoCamionVisible() {
+    return juegoCamion && !juegoCamion.classList.contains('oculto') && !bloqueadoCamion;
+}
+
+function tickCamion(now) {
+    if (bloqueadoCamion) {
+        rafCamion = null;
+        return;
+    }
+    if (!camionUltimoTickMs) camionUltimoTickMs = now;
+    const dt = Math.min(0.05, (now - camionUltimoTickMs) / 1000);
+    camionUltimoTickMs = now;
+
+    const t = Math.min(1, (now - camionInicioMs) / camionDuracionMs);
+    const a0 = camionAvanceInicio();
+    const a1 = camionAvanceCruce();
+    camionAvanceActual = a0 + (a1 - a0) * t;
+    if (!camionArrastrando) {
+        camionCarrilActual = Math.min(
+            CAMION_CARRIL_MAX,
+            Math.max(CAMION_CARRIL_MIN, camionCarrilActual + camionRumbo * CAMION_VEL_RUMBO * dt)
+        );
+    }
+    actualizarRumboVisual();
+    pintarCamion();
+
+    if (t < 1) {
+        rafCamion = requestAnimationFrame(tickCamion);
+        return;
+    }
+    rafCamion = null;
+    llegarCamionYResolver();
+}
+
+function llegarCamionYResolver() {
+    if (bloqueadoCamion) return;
+    bloqueadoCamion = true;
+    camionRumbo = 0;
+    camionArrastrando = false;
+    if (rafCamion !== null) {
+        cancelAnimationFrame(rafCamion);
+        rafCamion = null;
+    }
+
+    const destinos = [...elCamionDestinos.querySelectorAll('.camion-destino')];
+    const elegido = slotCamionAlineado();
+    const enCamino = elegido !== null;
+    const btn = enCamino ? destinos[elegido] : null;
+    const idx = btn ? Number(btn.dataset.idx) : -1;
+    const carrilLlegada = enCamino ? CAMION_CARRILES[elegido] : camionCarrilActual;
+
+    if (enCamino) camionCarrilActual = carrilLlegada;
+    camionAvanceActual = camionAvanceLlegada();
+    actualizarRumboVisual();
+    elCamionVehiculo.classList.add('llegando');
+    if (camionEsVertical) {
+        elCamionVehiculo.style.left = `${carrilLlegada}%`;
+        elCamionVehiculo.style.top = `${camionAvanceActual}%`;
+        elCamionVehiculo.style.transform = 'translate(-50%, -50%) rotate(-90deg) scale(0.78)';
+    } else {
+        elCamionVehiculo.style.left = `${camionAvanceActual}%`;
+        elCamionVehiculo.style.top = `${carrilLlegada}%`;
+        elCamionVehiculo.style.transform = 'translateY(-50%) scale(0.78)';
+    }
+
+    timerLlegadaCamion = setTimeout(() => {
+        timerLlegadaCamion = null;
+        destinos.forEach((el) => el.classList.remove('rumbo'));
+        const palabraCorrecta = PALABRAS[correctoCamion].palabra;
+        if (enCamino && idx === correctoCamion) {
+            btn.classList.add('correcta');
+            aciertosCamion += 1;
+            const antes = bonusVelocidadCamion;
+            bonusVelocidadCamion = Math.min(
+                CAMION_BONUS_MAX,
+                bonusVelocidadCamion + CAMION_CAMBIO_VELOCIDAD
+            );
+            const subio = bonusVelocidadCamion > antes;
+            actualizarMarcadorCamion();
+            mostrarFeedback(
+                elCamionMensaje,
+                subio ? `${MSG_BIEN} ¡Más rápido!` : MSG_BIEN,
+                'ok'
+            );
+            hablar(palabraCorrecta);
+            registrarEjercicioCompletado();
+        } else if (enCamino) {
+            registrarFalloCamion(destinos, btn);
+        } else {
+            registrarFalloCamion(destinos, null);
+        }
+        btnCamionSiguiente.classList.remove('oculto');
+        programarAutoSiguiente();
+    }, 480);
+}
+
+function cargarCamion() {
+    detenerCamion();
+    sincronizarOrientacionCamion();
+    bloqueadoCamion = false;
+    camionCarrilActual = CAMION_CARRIL_INICIO;
+    camionAvanceActual = camionAvanceInicio();
+    camionRumbo = 0;
+    camionDuracionMs = tiempoCamionActual();
+    btnCamionSiguiente.classList.add('oculto');
+    ocultarFeedback();
+    actualizarMarcadorCamion();
+
+    correctoCamion = colaCamion[indiceCamion];
+    const item = PALABRAS[correctoCamion];
+    elCamionPalabra.textContent = item.palabra;
+    elCamionPalabra.style.fontSize = '';
+
+    elCamionDestinos.innerHTML = '';
+    indicesOpciones(correctoCamion).forEach((idx, slot) => {
+        const el = document.createElement('div');
+        el.className = 'camion-destino';
+        el.dataset.idx = String(idx);
+        el.dataset.slot = String(slot);
+        renderImagenEn(el, PALABRAS[idx]);
+        elCamionDestinos.appendChild(el);
+    });
+
+    pintarCamion();
+    actualizarRumboVisual();
+    requestAnimationFrame(() => ajustarTamanoPalabraCamion());
+    camionInicioMs = performance.now();
+    camionUltimoTickMs = 0;
+    rafCamion = requestAnimationFrame(tickCamion);
+}
+
+function enlazarHoldRumbo(btn, sentido) {
+    if (!btn) return;
+    const empezar = (event) => {
+        if (!juegoCamionVisible()) return;
+        event.preventDefault();
+        btn.classList.add('pulsado');
+        if (sentido < 0) camionTeclasRumbo.arriba = true;
+        else camionTeclasRumbo.abajo = true;
+        sincronizarRumboDesdeTeclas();
+        try { btn.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+    };
+    const soltar = (event) => {
+        btn.classList.remove('pulsado');
+        if (sentido < 0) camionTeclasRumbo.arriba = false;
+        else camionTeclasRumbo.abajo = false;
+        sincronizarRumboDesdeTeclas();
+        try { btn.releasePointerCapture(event.pointerId); } catch { /* ignore */ }
+    };
+    btn.addEventListener('pointerdown', empezar);
+    btn.addEventListener('pointerup', soltar);
+    btn.addEventListener('pointercancel', soltar);
+    btn.addEventListener('lostpointercapture', soltar);
+}
+
+function moverCamionPorPuntero(clientX, clientY) {
+    if (!elCamionMundo || !juegoCamionVisible()) return;
+    const rect = elCamionMundo.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const pct = camionEsVertical
+        ? ((clientX - rect.left) / rect.width) * 100
+        : ((clientY - rect.top) / rect.height) * 100;
+    camionCarrilActual = Math.min(CAMION_CARRIL_MAX, Math.max(CAMION_CARRIL_MIN, pct));
+    actualizarRumboVisual();
+    pintarCamion();
+}
+
+function prepararControlesCamion() {
+    if (camionControlesListos) return;
+    camionControlesListos = true;
+
+    sincronizarOrientacionCamion();
+    window.addEventListener('resize', () => {
+        const antes = camionEsVertical;
+        sincronizarOrientacionCamion();
+        if (antes !== camionEsVertical && juegoCamion && !juegoCamion.classList.contains('oculto') && !bloqueadoCamion) {
+            // Reinicia el avance al cambiar orientación a mitad de ronda.
+            camionAvanceActual = camionAvanceInicio();
+            camionInicioMs = performance.now();
+            camionUltimoTickMs = 0;
+            pintarCamion();
+            ajustarTamanoPalabraCamion();
+        }
+    });
+
+    enlazarHoldRumbo(btnCamionArriba, -1);
+    enlazarHoldRumbo(btnCamionAbajo, 1);
+
+    if (elCamionMundo) {
+        elCamionMundo.addEventListener('pointerdown', (event) => {
+            if (!juegoCamionVisible()) return;
+            if (event.target.closest('.camion-timon')) return;
+            camionArrastrando = true;
+            camionRumbo = 0;
+            moverCamionPorPuntero(event.clientX, event.clientY);
+            try { elCamionMundo.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+        });
+        elCamionMundo.addEventListener('pointermove', (event) => {
+            if (!camionArrastrando || !juegoCamionVisible()) return;
+            moverCamionPorPuntero(event.clientX, event.clientY);
+        });
+        const finArrastre = () => {
+            camionArrastrando = false;
+            sincronizarRumboDesdeTeclas();
+        };
+        elCamionMundo.addEventListener('pointerup', finArrastre);
+        elCamionMundo.addEventListener('pointercancel', finArrastre);
+        elCamionMundo.addEventListener('lostpointercapture', finArrastre);
+    }
+
+    window.addEventListener('keydown', (event) => {
+        if (!juegoCamionVisible()) return;
+        const izq = camionEsVertical
+            ? (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A')
+            : (event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W');
+        const der = camionEsVertical
+            ? (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D')
+            : (event.key === 'ArrowDown' || event.key === 's' || event.key === 'S');
+        if (izq) {
+            event.preventDefault();
+            camionTeclasRumbo.arriba = true;
+            sincronizarRumboDesdeTeclas();
+        } else if (der) {
+            event.preventDefault();
+            camionTeclasRumbo.abajo = true;
+            sincronizarRumboDesdeTeclas();
+        }
+    });
+    window.addEventListener('keyup', (event) => {
+        const izq = camionEsVertical
+            ? (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A')
+            : (event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W');
+        const der = camionEsVertical
+            ? (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D')
+            : (event.key === 'ArrowDown' || event.key === 's' || event.key === 'S');
+        // También liberar al soltar las teclas “horizontales” clásicas.
+        if (izq || event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W' || event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
+            camionTeclasRumbo.arriba = false;
+            sincronizarRumboDesdeTeclas();
+        }
+        if (der || event.key === 'ArrowDown' || event.key === 's' || event.key === 'S' || event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
+            camionTeclasRumbo.abajo = false;
+            sincronizarRumboDesdeTeclas();
+        }
+    });
+}
+
+prepararControlesCamion();
+
+if (btnCamionSiguiente) {
+    btnCamionSiguiente.addEventListener('click', () => {
+        avanzarDespuesDeAcierto(() => {
+            indiceCamion = (indiceCamion + 1) % PALABRAS.length;
+            if (indiceCamion === 0) colaCamion = mezclar(colaCamion);
+            cargarCamion();
+        });
+    });
+}
+
+enlazarTactil('btn-camion-escuchar', () => {
+    if (correctoCamion !== null) hablar(PALABRAS[correctoCamion].palabra);
+});
+
+// --- Lectura: Fútbol (imagen → patear a la palabra) ---
+/** Ciclo ida y vuelta del puntero (ms). */
+const FUTBOL_CICLO_MS = 2600;
+/** Ángulo máximo de la flecha en paisaje (grados desde la vertical). */
+const FUTBOL_ANGULO_MAX = 78;
+/** Ángulo máximo de la flecha en retrato (grados desde la horizontal). */
+const FUTBOL_ANGULO_MAX_RETRATO = 78;
+/** Centros de las 3 palabras en el rango de aim 0…1 (con huecos entre medias). */
+const FUTBOL_AIM_CENTROS = [0.12, 0.5, 0.88];
+/** Radio de acierto alrededor de cada centro (el resto es fallo / poste). */
+const FUTBOL_AIM_RADIO = 0.09;
+/** Velocidad de la pelota al patear (px/s). */
+const FUTBOL_VEL_PX_S = 980;
+/** Tiempo máximo de vuelo por si no llega al arco (ms). */
+const FUTBOL_VUELO_MAX_MS = 2800;
+
+let colaFutbol = [];
+let indiceFutbol = 0;
+let bloqueadoFutbol = false;
+let correctoFutbol = null;
+let opcionesFutbol = [];
+let rafFutbol = null;
+let rafVueloFutbol = null;
+let futbolInicioMs = 0;
+let futbolAim = 0.5;
+/** Índice 0…2 o null si apunta al hueco entre palabras. */
+let futbolSlot = null;
+let futbolControlesListos = false;
+let futbolPortrait = false;
+const elFutbolAreaTiro = document.getElementById('futbol-area-tiro');
+const elFutbolArco = document.getElementById('futbol-arco');
+/** Temporizador opcional (cuenta regresiva por ronda). */
+let futbolTimerActivo = localStorage.getItem('futbolTimer') === '1';
+let futbolLimiteSeg = FUTBOL_TIMER_INICIAL;
+/** Segundos totales de la ronda actual (para el reloj que se consume). */
+let futbolRondaSeg = FUTBOL_TIMER_INICIAL;
+let futbolDeadlineMs = 0;
+let futbolUltimoSegMostrado = -1;
+
+const elFutbolImagen = document.getElementById('futbol-imagen');
+const elFutbolCancha = document.getElementById('futbol-cancha');
+const elFutbolPalabras = document.getElementById('futbol-palabras');
+const elFutbolPelota = document.getElementById('futbol-pelota');
+const elFutbolLinea = document.getElementById('futbol-linea');
+const elFutbolMensaje = document.getElementById('futbol-mensaje');
+const elFutbolContador = document.getElementById('futbol-contador');
+const elFutbolTimer = document.getElementById('futbol-timer');
+const elFutbolTimerNum = document.getElementById('futbol-timer-num');
+const elFutbolRelojArco = document.getElementById('futbol-reloj-arco');
+const btnFutbolSiguiente = document.getElementById('btn-futbol-siguiente');
+const btnFutbolTimer = document.getElementById('btn-futbol-timer');
+
+function esFutbolPortrait() {
+    return window.matchMedia('(orientation: portrait)').matches;
+}
+
+function aplicarFutbolTimerBtn() {
+    if (!btnFutbolTimer) return;
+    btnFutbolTimer.classList.toggle('activo', futbolTimerActivo);
+    btnFutbolTimer.setAttribute('aria-pressed', futbolTimerActivo ? 'true' : 'false');
+    btnFutbolTimer.title = futbolTimerActivo
+        ? 'Desactivar temporizador'
+        : 'Activar temporizador (15 s)';
+    if (elFutbolTimer) {
+        elFutbolTimer.classList.toggle('oculto', !futbolTimerActivo);
+    }
+}
+
+/**
+ * Actualiza el reloj analógico.
+ * @param {number} restanteSeg segundos restantes (puede ser decimal)
+ * @param {number} [fraccion] 1 = lleno, 0 = vacío; si se omite, se calcula con la ronda
+ */
+function pintarFutbolTimer(restanteSeg, fraccion) {
+    if (!elFutbolTimer) return;
+    const seg = Math.max(0, Math.ceil(restanteSeg));
+    const frac = Math.max(0, Math.min(1,
+        fraccion !== undefined
+            ? fraccion
+            : (futbolRondaSeg > 0 ? restanteSeg / futbolRondaSeg : 0)
+    ));
+    futbolUltimoSegMostrado = seg;
+    if (elFutbolTimerNum) elFutbolTimerNum.textContent = String(seg);
+    elFutbolTimer.setAttribute('aria-label', `Temporizador ${seg} segundos`);
+    elFutbolTimer.classList.toggle('urgente', seg <= 5 && frac < 1);
+    if (elFutbolRelojArco) {
+        /* Arco restante desde las 12, sentido horario */
+        const visible = Math.max(0, Math.min(100, frac * 100));
+        elFutbolRelojArco.style.strokeDasharray = `${visible} 100`;
+        elFutbolRelojArco.style.strokeDashoffset = '0';
+    }
+}
+
+function ajustarLimiteFutbol(delta) {
+    futbolLimiteSeg = Math.min(
+        FUTBOL_TIMER_MAX,
+        Math.max(FUTBOL_TIMER_MIN, futbolLimiteSeg + delta)
+    );
+}
+
+function avanzarPalabraFutbol() {
+    indiceFutbol = (indiceFutbol + 1) % PALABRAS.length;
+    if (indiceFutbol === 0) colaFutbol = mezclar(colaFutbol);
+    cargarFutbol();
+}
+
+function detenerFutbol() {
+    if (rafFutbol !== null) {
+        cancelAnimationFrame(rafFutbol);
+        rafFutbol = null;
+    }
+    if (rafVueloFutbol !== null) {
+        cancelAnimationFrame(rafVueloFutbol);
+        rafVueloFutbol = null;
+    }
+    resetPelotaFutbol();
+    if (elFutbolLinea) {
+        elFutbolLinea.style.transform = '';
+        elFutbolLinea.classList.remove('oculto');
+    }
+}
+
+/** Devuelve 0…2 si apunta a una palabra, o null si va al hueco. */
+function slotDesdeAim(aim) {
+    let mejor = null;
+    let mejorDist = Infinity;
+    for (let i = 0; i < FUTBOL_AIM_CENTROS.length; i++) {
+        const d = Math.abs(aim - FUTBOL_AIM_CENTROS[i]);
+        if (d <= FUTBOL_AIM_RADIO && d < mejorDist) {
+            mejor = i;
+            mejorDist = d;
+        }
+    }
+    return mejor;
+}
+
+/** Triángulo 0→1→0 en un ciclo. */
+function aimDesdeTiempo(elapsedMs) {
+    const t = (elapsedMs % FUTBOL_CICLO_MS) / FUTBOL_CICLO_MS;
+    return t < 0.5 ? t * 2 : 2 - t * 2;
+}
+
+function actualizarLineaFutbol() {
+    if (!elFutbolLinea) return;
+    const maxAng = futbolPortrait ? FUTBOL_ANGULO_MAX_RETRATO : FUTBOL_ANGULO_MAX;
+    const angulo = (futbolAim - 0.5) * 2 * maxAng;
+    elFutbolLinea.style.transform = `rotate(${angulo}deg)`;
+}
+
+function anguloPateadaFutbol() {
+    const maxAng = futbolPortrait ? FUTBOL_ANGULO_MAX_RETRATO : FUTBOL_ANGULO_MAX;
+    return (futbolAim - 0.5) * 2 * maxAng;
+}
+
+/** Velocidad unitaria según la flecha (coords de pantalla: +y hacia abajo). */
+function velocidadDesdeAimFutbol() {
+    const rad = anguloPateadaFutbol() * (Math.PI / 180);
+    if (futbolPortrait) {
+        /* 0° = derecha; negativo = arriba; positivo = abajo */
+        return { vx: Math.cos(rad), vy: Math.sin(rad) };
+    }
+    /* 0° = arriba; negativo = izquierda; positivo = derecha */
+    return { vx: Math.sin(rad), vy: -Math.cos(rad) };
+}
+
+function slotEnPuntoFutbol(clientX, clientY) {
+    const palabras = elFutbolPalabras?.querySelectorAll('.futbol-palabra');
+    if (!palabras) return null;
+    for (const el of palabras) {
+        const r = el.getBoundingClientRect();
+        if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+            return Number(el.dataset.slot);
+        }
+    }
+    return null;
+}
+
+function tiempoAgotadoFutbol() {
+    if (bloqueadoFutbol) return;
+    bloqueadoFutbol = true;
+    if (rafFutbol !== null) {
+        cancelAnimationFrame(rafFutbol);
+        rafFutbol = null;
+    }
+    elFutbolLinea?.classList.add('oculto');
+    const destinos = [...(elFutbolPalabras?.querySelectorAll('.futbol-palabra') || [])];
+    const correctoEl = destinos.find((el) => el.dataset.correcta === '1');
+    correctoEl?.classList.add('correcta');
+    mostrarFeedback(elFutbolMensaje, MSG_TIEMPO, 'mal');
+    sonidoHinchadaFutbol();
+    if (correctoFutbol !== null) hablar(PALABRAS[correctoFutbol].palabra);
+    ajustarLimiteFutbol(1);
+    pintarFutbolTimer(0, 0);
+    btnFutbolSiguiente?.classList.remove('oculto');
+    programarAutoSiguiente();
+}
+
+function tickFutbol(now) {
+    if (bloqueadoFutbol) {
+        rafFutbol = null;
+        return;
+    }
+    if (!juegoFutbol || juegoFutbol.classList.contains('oculto')) {
+        rafFutbol = null;
+        return;
+    }
+
+    if (futbolTimerActivo && futbolDeadlineMs > 0) {
+        const restanteMs = Math.max(0, futbolDeadlineMs - now);
+        const frac = futbolRondaSeg > 0 ? restanteMs / (futbolRondaSeg * 1000) : 0;
+        pintarFutbolTimer(restanteMs / 1000, frac);
+        if (now >= futbolDeadlineMs) {
+            tiempoAgotadoFutbol();
+            return;
+        }
+    }
+
+    futbolPortrait = esFutbolPortrait();
+    futbolAim = aimDesdeTiempo(now - futbolInicioMs);
+    futbolSlot = slotDesdeAim(futbolAim);
+    actualizarLineaFutbol();
+    rafFutbol = requestAnimationFrame(tickFutbol);
+}
+
+function juegoFutbolVisible() {
+    return juegoFutbol && !juegoFutbol.classList.contains('oculto') && !bloqueadoFutbol;
+}
+
+function resetPelotaFutbol() {
+    if (!elFutbolPelota) return;
+    if (elFutbolAreaTiro && elFutbolPelota.parentElement !== elFutbolAreaTiro) {
+        elFutbolAreaTiro.appendChild(elFutbolPelota);
+    }
+    elFutbolPelota.classList.remove('volando');
+    elFutbolPelota.style.left = '';
+    elFutbolPelota.style.top = '';
+    elFutbolPelota.style.bottom = '';
+    elFutbolPelota.style.transform = '';
+    elFutbolPelota.style.transition = '';
+}
+
+function iniciarFutbol() {
+    colaFutbol = mezclar(PALABRAS.map((_, i) => i));
+    indiceFutbol = 0;
+    futbolLimiteSeg = FUTBOL_TIMER_INICIAL;
+    precargarSfxFutbol();
+    cargarFutbol();
+}
+
+function cargarFutbol() {
+    precargarSfxFutbol();
+    detenerFutbol();
+    bloqueadoFutbol = false;
+    futbolAim = 0.5;
+    futbolSlot = null;
+    futbolPortrait = esFutbolPortrait();
+    btnFutbolSiguiente?.classList.add('oculto');
+    if (elFutbolMensaje) {
+        ocultarFeedback();
+    }
+    elFutbolImagen?.classList.remove('acierto');
+    elFutbolLinea?.classList.remove('oculto');
+    resetPelotaFutbol();
+    aplicarFutbolTimerBtn();
+
+    correctoFutbol = colaFutbol[indiceFutbol];
+    const item = PALABRAS[correctoFutbol];
+    if (elFutbolContador) {
+        elFutbolContador.textContent = `Palabra ${indiceFutbol + 1} de ${PALABRAS.length}`;
+    }
+    if (elFutbolImagen) renderImagenEn(elFutbolImagen, item);
+
+    opcionesFutbol = opcionesImagenPalabra(correctoFutbol);
+    if (elFutbolPalabras) {
+        elFutbolPalabras.innerHTML = '';
+        opcionesFutbol.forEach((opcion, slot) => {
+            const el = document.createElement('div');
+            el.className = 'futbol-palabra';
+            el.dataset.slot = String(slot);
+            el.dataset.correcta = opcion.correcta ? '1' : '0';
+            el.textContent = opcion.palabra;
+            elFutbolPalabras.appendChild(el);
+        });
+    }
+
+    actualizarLineaFutbol();
+    futbolInicioMs = performance.now();
+    if (futbolTimerActivo) {
+        futbolRondaSeg = futbolLimiteSeg;
+        futbolDeadlineMs = futbolInicioMs + futbolRondaSeg * 1000;
+        pintarFutbolTimer(futbolRondaSeg, 1);
+    } else {
+        futbolDeadlineMs = 0;
+        futbolUltimoSegMostrado = -1;
+    }
+    rafFutbol = requestAnimationFrame(tickFutbol);
+}
+
+function resolverFutbol(slot) {
+    const destinos = [...(elFutbolPalabras?.querySelectorAll('.futbol-palabra') || [])];
+    const elegido = slot === null
+        ? null
+        : destinos.find((el) => Number(el.dataset.slot) === slot);
+    const acierto = slot !== null && Boolean(opcionesFutbol[slot]?.correcta);
+
+    if (acierto) {
+        elegido?.classList.add('correcta');
+        elFutbolImagen?.classList.add('acierto');
+        mostrarFeedback(elFutbolMensaje, MSG_BIEN, 'ok');
+        sonidoGolFutbol();
+        setTimeout(() => hablar(PALABRAS[correctoFutbol].palabra), 400);
+        if (futbolTimerActivo) {
+            ajustarLimiteFutbol(-1);
+            pintarFutbolTimer(futbolLimiteSeg, 1);
+        }
+        registrarEjercicioCompletado({ silencio: true });
+        btnFutbolSiguiente?.classList.remove('oculto');
+        programarAutoSiguiente();
+    } else {
+        elegido?.classList.add('incorrecta');
+        const correctoEl = destinos.find((el) => el.dataset.correcta === '1');
+        correctoEl?.classList.add('correcta');
+        mostrarFeedback(elFutbolMensaje, MSG_CASI, 'mal');
+        sonidoHinchadaFutbol();
+        setTimeout(() => hablar(PALABRAS[correctoFutbol].palabra), 400);
+        if (futbolTimerActivo) {
+            ajustarLimiteFutbol(1);
+            pintarFutbolTimer(futbolLimiteSeg, 1);
+        }
+        btnFutbolSiguiente?.classList.remove('oculto');
+        programarAutoSiguiente();
+    }
+}
+
+function patearFutbol() {
+    if (!juegoFutbolVisible() || !elFutbolPelota || !elFutbolCancha) return;
+    bloqueadoFutbol = true;
+    if (rafFutbol !== null) {
+        cancelAnimationFrame(rafFutbol);
+        rafFutbol = null;
+    }
+    if (rafVueloFutbol !== null) {
+        cancelAnimationFrame(rafVueloFutbol);
+        rafVueloFutbol = null;
+    }
+
+    const slotAlPatear = futbolSlot;
+    futbolPortrait = esFutbolPortrait();
+    elFutbolLinea?.classList.add('oculto');
+
+    const canchaRect = elFutbolCancha.getBoundingClientRect();
+    const pelotaRect = elFutbolPelota.getBoundingClientRect();
+    const radio = Math.max(16, pelotaRect.width / 2);
+    let x = pelotaRect.left - canchaRect.left + pelotaRect.width / 2;
+    let y = pelotaRect.top - canchaRect.top + pelotaRect.height / 2;
+    let { vx, vy } = velocidadDesdeAimFutbol();
+    let giro = 0;
+    const vueloInicio = performance.now();
+    let ultimoTick = vueloInicio;
+    let entroAlArco = false;
+
+    elFutbolCancha.appendChild(elFutbolPelota);
+    elFutbolPelota.classList.add('volando');
+    elFutbolPelota.style.bottom = 'auto';
+    elFutbolPelota.style.left = `${x}px`;
+    elFutbolPelota.style.top = `${y}px`;
+    elFutbolPelota.style.transform = 'translate(-50%, -50%) scale(1.08)';
+
+    const pintarPelota = () => {
+        elFutbolPelota.style.left = `${x}px`;
+        elFutbolPelota.style.top = `${y}px`;
+        elFutbolPelota.style.transform = `translate(-50%, -50%) rotate(${giro}deg)`;
+    };
+
+    const finalizarVuelo = (slot) => {
+        rafVueloFutbol = null;
+        elFutbolPelota.style.transform = `translate(-50%, -50%) scale(0.78) rotate(${giro}deg)`;
+        resolverFutbol(slot);
+    };
+
+    const tickVuelo = (now) => {
+        const dt = Math.min(0.04, (now - ultimoTick) / 1000);
+        ultimoTick = now;
+        const paso = FUTBOL_VEL_PX_S * dt;
+        x += vx * paso;
+        y += vy * paso;
+        giro += (futbolPortrait ? vy : vx) * paso * 2.2;
+
+        const minX = radio;
+        const maxX = canchaRect.width - radio;
+        const minY = radio;
+        const maxY = canchaRect.height - radio;
+
+        /* Rebote en paredes laterales (según orientación del tiro). */
+        if (futbolPortrait) {
+            if (y < minY) { y = minY; vy = Math.abs(vy); }
+            else if (y > maxY) { y = maxY; vy = -Math.abs(vy); }
+            x = Math.min(maxX, Math.max(minX, x));
+        } else {
+            if (x < minX) { x = minX; vx = Math.abs(vx); }
+            else if (x > maxX) { x = maxX; vx = -Math.abs(vx); }
+            y = Math.min(maxY, Math.max(minY, y));
+        }
+
+        pintarPelota();
+
+        const arcoRect = elFutbolArco?.getBoundingClientRect();
+        const cx = canchaRect.left + x;
+        const cy = canchaRect.top + y;
+        let enArco = false;
+        if (arcoRect) {
+            enArco = cx >= arcoRect.left && cx <= arcoRect.right
+                && cy >= arcoRect.top && cy <= arcoRect.bottom;
+        }
+
+        if (enArco) {
+            if (!entroAlArco) entroAlArco = true;
+            const hit = slotEnPuntoFutbol(cx, cy);
+            if (hit !== null) {
+                finalizarVuelo(hit);
+                return;
+            }
+            /* Siguió hasta el fondo del arco sin tocar palabra → fallo. */
+            const profundo = futbolPortrait
+                ? cx >= arcoRect.left + arcoRect.width * 0.55
+                : cy <= arcoRect.top + arcoRect.height * 0.45;
+            if (profundo) {
+                finalizarVuelo(null);
+                return;
+            }
+        } else if (entroAlArco) {
+            finalizarVuelo(slotEnPuntoFutbol(cx, cy));
+            return;
+        }
+
+        if (now - vueloInicio > FUTBOL_VUELO_MAX_MS) {
+            finalizarVuelo(slotAlPatear);
+            return;
+        }
+
+        rafVueloFutbol = requestAnimationFrame(tickVuelo);
+    };
+
+    requestAnimationFrame(() => {
+        elFutbolPelota.style.transform = 'translate(-50%, -50%)';
+        rafVueloFutbol = requestAnimationFrame(tickVuelo);
+    });
+}
+
+function alternarFutbolTimer() {
+    futbolTimerActivo = !futbolTimerActivo;
+    localStorage.setItem('futbolTimer', futbolTimerActivo ? '1' : '0');
+    aplicarFutbolTimerBtn();
+    if (!juegoFutbol || juegoFutbol.classList.contains('oculto')) return;
+    if (futbolTimerActivo) {
+        futbolLimiteSeg = FUTBOL_TIMER_INICIAL;
+        futbolRondaSeg = futbolLimiteSeg;
+        if (!bloqueadoFutbol) {
+            const now = performance.now();
+            futbolDeadlineMs = now + futbolRondaSeg * 1000;
+            pintarFutbolTimer(futbolRondaSeg, 1);
+        } else {
+            pintarFutbolTimer(futbolLimiteSeg, 1);
+        }
+    } else {
+        futbolDeadlineMs = 0;
+        futbolUltimoSegMostrado = -1;
+    }
+}
+
+function prepararControlesFutbol() {
+    if (futbolControlesListos) return;
+    futbolControlesListos = true;
+
+    const intentarPatear = (event) => {
+        if (event?.target?.closest?.('#btn-futbol-siguiente')) return;
+        if (event?.target?.closest?.('#btn-futbol-timer')) return;
+        if (!juegoFutbolVisible()) return;
+        event?.preventDefault?.();
+        patearFutbol();
+    };
+
+    if (elFutbolCancha) {
+        agregarActivacionTactil(elFutbolCancha, intentarPatear);
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!juegoFutbolVisible()) return;
+        if (event.code !== 'Space' && event.key !== 'Enter') return;
+        if (event.target && ['INPUT', 'TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
+            if (event.target.id !== 'futbol-pelota') return;
+        }
+        event.preventDefault();
+        patearFutbol();
+    });
+}
+
+prepararControlesFutbol();
+aplicarFutbolTimerBtn();
+
+if (btnFutbolSiguiente) {
+    btnFutbolSiguiente.addEventListener('click', () => {
+        avanzarDespuesDeAcierto(avanzarPalabraFutbol);
+    });
+}
+
+btnFutbolTimer?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    alternarFutbolTimer();
+});
+
+enlazarTactil('btn-futbol-escuchar', () => {
+    if (correctoFutbol !== null) hablar(PALABRAS[correctoFutbol].palabra);
+});
+
 // --- Lectura: Explorar catálogo ---
 const elExplorarCatalogo = document.getElementById('explorar-catalogo');
 let explorarMontado = false;
@@ -2053,6 +3359,7 @@ function iniciarExplorar() {
 let contarCantidad = 0;
 let contarEntrada = '';
 let contarBloqueado = false;
+let contarEmoji = '';
 
 const elContarObjetos = document.getElementById('contar-objetos');
 const elContarPantalla = document.getElementById('contar-pantalla');
@@ -2060,18 +3367,22 @@ const elContarTeclado = document.getElementById('contar-teclado');
 const elContarMensaje = document.getElementById('contar-mensaje');
 const btnContarSiguiente = document.getElementById('btn-contar-siguiente');
 
+function restaurarObjetosContar() {
+    if (!contarCantidad || !contarEmoji) return;
+    renderObjetos(elContarObjetos, contarEmoji, contarCantidad);
+}
+
 function iniciarContar() {
     desactivarEntradaNumerica();
     desactivarTecladoMat();
     contarBloqueado = false;
     contarEntrada = '';
     btnContarSiguiente.classList.add('oculto');
-    elContarMensaje.textContent = '';
-    elContarMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     const max = getMaxEnPantalla('contar');
     contarCantidad = numeroAleatorio(1, max);
-    const emoji = EMOJIS_CONTAR[numeroAleatorio(0, EMOJIS_CONTAR.length - 1)];
-    renderObjetos(elContarObjetos, emoji, contarCantidad);
+    contarEmoji = EMOJIS_CONTAR[numeroAleatorio(0, EMOJIS_CONTAR.length - 1)];
+    renderObjetos(elContarObjetos, contarEmoji, contarCantidad);
     elContarPantalla.textContent = '?';
 
     activarEntradaNumerica({
@@ -2118,6 +3429,7 @@ function verificarContar() {
 btnContarSiguiente.addEventListener('click', () => {
     avanzarDespuesDeAcierto(iniciarContar);
 });
+enlazarTactil('btn-contar-restaurar', restaurarObjetosContar);
 enlazarTactil('btn-contar-decir', () => {
     if (contarEntrada) hablarNumeroEscrito(contarEntrada);
 });
@@ -2257,8 +3569,7 @@ function iniciarVincular() {
     vincularSelNum = null;
     vincularEntradaKb = '';
     btnVincularSiguiente.classList.add('oculto');
-    elVincularMensaje.textContent = '';
-    elVincularMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
 
     const max = getMaxEnPantalla('vincular');
     const ronda = generarRondaVincular(max);
@@ -2390,8 +3701,7 @@ function iniciarEscribirNumero() {
     enBloqueado = false;
     enEntrada = '';
     btnEnSiguiente.classList.add('oculto');
-    elEnMensaje.textContent = '';
-    elEnMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     enObjetivo = numeroAleatorio(1, getNivelJuego('escribir-numero').max);
     elEnPantalla.textContent = '?';
 
@@ -2462,8 +3772,7 @@ function iniciarElegirNumero() {
     elBloqueado = false;
     elEntradaKb = '';
     btnElSiguiente.classList.add('oculto');
-    elElMensaje.textContent = '';
-    elElMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     const max = getNivelJuego('elegir-numero').max;
     elObjetivo = numeroAleatorio(1, max);
     const opciones = numerosDistractores(elObjetivo, 3, 1, max);
@@ -2562,8 +3871,7 @@ function iniciarSumarEscribir() {
     seBloqueado = false;
     seEntrada = '';
     btnSeSiguiente.classList.add('oculto');
-    elSeMensaje.textContent = '';
-    elSeMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     seRonda = generarRondaSuma('sumar-escribir');
     montarPanelSuma(seRonda, elSeObjA, elSeCantA, elSeObjB, elSeCantB);
     elSePantalla.textContent = '?';
@@ -2612,6 +3920,10 @@ function verificarSumarEscribir() {
 enlazarTactil('btn-se-escuchar', () => {
     if (!seBloqueado && seRonda) hablarSuma(seRonda.a, seRonda.b);
 });
+enlazarTactil('btn-se-restaurar', () => {
+    if (!seRonda) return;
+    montarPanelSuma(seRonda, elSeObjA, elSeCantA, elSeObjB, elSeCantB);
+});
 enlazarTactil('btn-se-decir', () => {
     if (seEntrada) hablarNumeroEscrito(seEntrada);
 });
@@ -2638,8 +3950,7 @@ function iniciarSumarElegir() {
     selBloqueado = false;
     selEntradaKb = '';
     btnSelSiguiente.classList.add('oculto');
-    elSelMensaje.textContent = '';
-    elSelMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     selRonda = generarRondaSuma('sumar-elegir');
     montarPanelSuma(selRonda, elSelObjA, elSelCantA, elSelObjB, elSelCantB);
 
@@ -2712,6 +4023,10 @@ function responderSumarElegir(num, btn) {
 enlazarTactil('btn-sel-escuchar', () => {
     if (!selBloqueado && selRonda) hablarSuma(selRonda.a, selRonda.b);
 });
+enlazarTactil('btn-sel-restaurar', () => {
+    if (!selRonda) return;
+    montarPanelSuma(selRonda, elSelObjA, elSelCantA, elSelObjB, elSelCantB);
+});
 btnSelSiguiente.addEventListener('click', () => {
     avanzarDespuesDeAcierto(iniciarSumarElegir);
 });
@@ -2741,8 +4056,7 @@ function iniciarRestarEscribir() {
     reBloqueado = false;
     reEntrada = '';
     btnReSiguiente.classList.add('oculto');
-    elReMensaje.textContent = '';
-    elReMensaje.className = 'mensaje-quiz';
+    ocultarFeedback();
     reRonda = generarRondaResta('restar-escribir');
     montarPanelResta(reRonda, elReVisual);
     actualizarExpresionResta(reRonda, '');
@@ -2792,6 +4106,10 @@ function verificarRestarEscribir() {
 enlazarTactil('btn-re-escuchar', () => {
     if (!reBloqueado && reRonda) hablarResta(reRonda.total, reRonda.resta);
 });
+enlazarTactil('btn-re-restaurar', () => {
+    if (!reRonda) return;
+    montarPanelResta(reRonda, elReVisual);
+});
 enlazarTactil('btn-re-decir', () => {
     if (reEntrada) hablarNumeroEscrito(reEntrada);
 });
@@ -2805,6 +4123,9 @@ function juegoAleatorioId() {
 
 function mostrarEjercicioAleatorio() {
     cancelarAutoSiguiente();
+    ocultarFeedback();
+    detenerCamion();
+    detenerFutbol();
     desactivarEntradaNumerica();
     desactivarTecladoMat();
     menu.classList.add('oculto');
@@ -2828,6 +4149,16 @@ function mostrarEjercicioAleatorio() {
         if (!colaIP.length) colaIP = mezclar(PALABRAS.map((_, i) => i));
         indiceIP = numeroAleatorio(0, PALABRAS.length - 1);
         cargarImagenPalabra();
+    } else if (id === 'camion') {
+        juegoCamion.classList.remove('oculto');
+        if (!colaCamion.length) colaCamion = mezclar(PALABRAS.map((_, i) => i));
+        indiceCamion = numeroAleatorio(0, PALABRAS.length - 1);
+        cargarCamion();
+    } else if (id === 'futbol') {
+        juegoFutbol.classList.remove('oculto');
+        if (!colaFutbol.length) colaFutbol = mezclar(PALABRAS.map((_, i) => i));
+        indiceFutbol = numeroAleatorio(0, PALABRAS.length - 1);
+        cargarFutbol();
     } else if (id === 'contar') {
         juegoContar.classList.remove('oculto');
         iniciarContar();

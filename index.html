@@ -55,6 +55,14 @@
                 <span class="emoji-menu">📚</span>
                 Explorar
             </button>
+            <button class="btn-juego" type="button" data-juego="camion">
+                <span class="emoji-menu">🚚</span>
+                Camión
+            </button>
+            <button class="btn-juego" type="button" data-juego="futbol">
+                <span class="emoji-menu">⚽</span>
+                Fútbol
+            </button>
             <p class="menu-seccion">Matemática</p>
             <button class="btn-juego" type="button" data-juego="contar">
                 <span class="emoji-menu">🔢</span>
@@ -126,6 +134,7 @@
                 </div>
                 <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
                 <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-toggle-distractores" id="btn-silabas-distractores" aria-pressed="false" title="Más sílabas confusas (difícil)">+</button>
                 <button type="button" class="btn-volver" id="btn-escuchar-pista" title="Escuchar la palabra">🔊 Pista</button>
             </div>
         </div>
@@ -204,10 +213,98 @@
         <div id="explorar-catalogo" class="explorar-catalogo" role="list"></div>
     </section>
 
+    <!-- Lectura: Camión (palabra → imagen con tiempo) -->
+    <section id="juego-camion" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span id="camion-aciertos" class="camion-aciertos">Correctas: 0</span>
+            <div class="lectura-header-acciones">
+                <div class="tamano-texto-grupo" role="group" aria-label="Tamaño del texto">
+                    <button type="button" class="btn-toggle-tamano" data-tamano-menos title="Texto más chico" aria-label="Texto más chico">−</button>
+                    <button type="button" class="btn-toggle-tamano" data-tamano-mas title="Texto más grande" aria-label="Texto más grande">+</button>
+                </div>
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-volver" id="btn-camion-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
+            </div>
+        </div>
+        <p class="camion-ayuda" id="camion-ayuda">Subí o bajá para cambiar el rumbo del camión</p>
+        <div class="camion-escena" id="camion-escena">
+            <div class="camion-mundo" id="camion-mundo">
+                <div class="camion-rutas" aria-hidden="true">
+                    <span class="camion-tronco"></span>
+                    <span class="camion-rama camion-rama-0"></span>
+                    <span class="camion-rama camion-rama-1"></span>
+                    <span class="camion-rama camion-rama-2"></span>
+                    <span class="camion-poste"></span>
+                </div>
+                <div class="camion-vehiculo" id="camion-vehiculo">
+                    <span class="camion-caja" id="camion-palabra"></span>
+                    <span class="camion-cabina" aria-hidden="true">🚚</span>
+                </div>
+                <div id="camion-destinos" class="camion-destinos" aria-hidden="true"></div>
+                <div class="camion-timon" role="group" aria-label="Dirigir el camión">
+                    <button type="button" id="btn-camion-arriba" class="camion-timon-btn" aria-label="Subir">▲</button>
+                    <button type="button" id="btn-camion-abajo" class="camion-timon-btn" aria-label="Bajar">▼</button>
+                </div>
+            </div>
+        </div>
+        <div id="camion-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-camion-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+    </section>
+
+    <!-- Lectura: Fútbol (imagen → patear a la palabra) -->
+    <section id="juego-futbol" class="pantalla-juego oculto">
+        <button type="button" class="btn-volver" data-volver>← Volver</button>
+        <div class="quiz-header">
+            <span id="futbol-contador">Palabra 1 de 50</span>
+            <div id="futbol-timer" class="futbol-timer oculto" role="timer" aria-live="polite" aria-label="Temporizador 15 segundos">
+                <svg class="futbol-reloj" viewBox="0 0 36 36" aria-hidden="true">
+                    <circle class="futbol-reloj-pista" cx="18" cy="18" r="15"></circle>
+                    <circle class="futbol-reloj-arco" id="futbol-reloj-arco" cx="18" cy="18" r="15" pathLength="100"></circle>
+                </svg>
+                <span id="futbol-timer-num" class="futbol-timer-num">15</span>
+            </div>
+            <div class="lectura-header-acciones">
+                <div class="tamano-texto-grupo" role="group" aria-label="Tamaño del texto">
+                    <button type="button" class="btn-toggle-tamano" data-tamano-menos title="Texto más chico" aria-label="Texto más chico">−</button>
+                    <button type="button" class="btn-toggle-tamano" data-tamano-mas title="Texto más grande" aria-label="Texto más grande">+</button>
+                </div>
+                <button type="button" class="btn-toggle-lectura" data-toggle-lectura aria-pressed="false" title="Activar lectura fácil">Aa+</button>
+                <button type="button" class="btn-toggle-mayus" data-toggle-mayus title="Cambiar a minúsculas">a</button>
+                <button type="button" class="btn-toggle-similares" id="btn-futbol-similares" aria-pressed="true" title="Palabras parecidas (difícil)">≈</button>
+                <button type="button" class="btn-toggle-timer" id="btn-futbol-timer" aria-pressed="false" title="Activar temporizador">⏱</button>
+                <button type="button" class="btn-volver" id="btn-futbol-escuchar" title="Escuchar la palabra">🔊 Escuchar</button>
+            </div>
+        </div>
+        <p class="futbol-ayuda">Tocá para patear cuando la flecha apunte a la palabra</p>
+        <div class="futbol-escena" id="futbol-escena">
+            <div id="futbol-imagen" class="futbol-imagen" aria-hidden="true"></div>
+            <div class="futbol-cancha" id="futbol-cancha">
+                <div class="futbol-arco" id="futbol-arco" aria-hidden="true">
+                    <div class="futbol-poste futbol-poste-izq"></div>
+                    <div class="futbol-poste futbol-poste-der"></div>
+                    <div class="futbol-largo"></div>
+                    <div class="futbol-red"></div>
+                    <div id="futbol-palabras" class="futbol-palabras"></div>
+                </div>
+                <div class="futbol-area-tiro" id="futbol-area-tiro">
+                    <div class="futbol-linea" id="futbol-linea" aria-hidden="true"></div>
+                    <button type="button" class="futbol-pelota" id="futbol-pelota" title="Patear" aria-label="Patear">⚽</button>
+                </div>
+            </div>
+        </div>
+        <div id="futbol-mensaje" class="mensaje-quiz"></div>
+        <button type="button" id="btn-futbol-siguiente" class="btn-siguiente oculto">Siguiente →</button>
+    </section>
+
     <!-- Matemática 1: Contar -->
     <section id="juego-contar" class="pantalla-juego oculto">
         <button type="button" class="btn-volver" data-volver>← Volver</button>
-        <div class="quiz-header"><span>¿Cuántos hay? · Enter para aceptar</span></div>
+        <div class="quiz-header">
+            <span>¿Cuántos hay? · Enter para aceptar</span>
+            <button type="button" class="btn-restaurar-objetos" id="btn-contar-restaurar" title="Volver a ordenar los dibujos">↺ Restaurar</button>
+        </div>
         <div id="contar-objetos" class="objetos-grid"></div>
         <div class="pantalla-numero-fila">
             <div class="pantalla-numero">
@@ -282,7 +379,10 @@
         <button type="button" class="btn-volver" data-volver>← Volver</button>
         <div class="quiz-header">
             <span>¿Cuántos suman? · Enter para aceptar</span>
-            <button type="button" class="btn-volver" id="btn-se-escuchar">🔊 Escuchar</button>
+            <div class="quiz-header-acciones">
+                <button type="button" class="btn-restaurar-objetos" id="btn-se-restaurar" title="Volver a ordenar los dibujos">↺ Restaurar</button>
+                <button type="button" class="btn-volver" id="btn-se-escuchar">🔊 Escuchar</button>
+            </div>
         </div>
         <div class="suma-contenedor">
             <div class="suma-grupo">
@@ -314,7 +414,10 @@
         <button type="button" class="btn-volver" data-volver>← Volver</button>
         <div class="quiz-header">
             <span>¿Cuántos suman?</span>
-            <button type="button" class="btn-volver" id="btn-sel-escuchar">🔊 Escuchar</button>
+            <div class="quiz-header-acciones">
+                <button type="button" class="btn-restaurar-objetos" id="btn-sel-restaurar" title="Volver a ordenar los dibujos">↺ Restaurar</button>
+                <button type="button" class="btn-volver" id="btn-sel-escuchar">🔊 Escuchar</button>
+            </div>
         </div>
         <div class="suma-contenedor">
             <div class="suma-grupo">
@@ -338,7 +441,10 @@
         <button type="button" class="btn-volver" data-volver>← Volver</button>
         <div class="quiz-header">
             <span>¿Cuánto queda? · Enter para aceptar</span>
-            <button type="button" class="btn-volver" id="btn-re-escuchar">🔊 Escuchar</button>
+            <div class="quiz-header-acciones">
+                <button type="button" class="btn-restaurar-objetos" id="btn-re-restaurar" title="Volver a ordenar los dibujos">↺ Restaurar</button>
+                <button type="button" class="btn-volver" id="btn-re-escuchar">🔊 Escuchar</button>
+            </div>
         </div>
         <div class="resta-panel">
             <div class="resta-recuadro-total">
@@ -362,6 +468,8 @@
         <button type="button" id="btn-re-siguiente" class="btn-siguiente oculto">Siguiente →</button>
         <div class="barra-dificultad barra-dificultad-juego" data-barra-mat="restar-escribir"></div>
     </section>
+
+    <div id="feedback-toast" class="feedback-toast oculto" role="status" aria-live="polite"></div>
 
     <div id="celebracion-cinco" class="celebracion-cinco oculto" role="dialog" aria-live="polite">
         <div class="celebracion-cinco-contenido">

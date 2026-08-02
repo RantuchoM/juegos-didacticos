@@ -1,0 +1,3 @@
+- gol.mp3 — recorte aportado para el juego (primeros ~2,5 s)
+- hinchada-error.mp3 — Universfield: crowd disappointment reaction
+  (archivo aportado: universfield-crowd-disappointment-reaction-352718.mp3)

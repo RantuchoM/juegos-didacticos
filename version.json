@@ -1,8 +1,9 @@
 {
-  "buildId": "v36",
+  "buildId": "v71",
   "title": "¡Novedades!",
   "changes": [
-    "Sílabas con h (hi, he, ham…) en español, no en inglés",
-    "ri/ron sin el sonido «a» de más"
+    "«¡Casi!» desaparece solo a los dos segundos",
+    "«Siguiente» ya no levanta la barra de abajo al acertar",
+    "El aviso de bien/casi sigue flotando sin mover el juego"
   ]
 }

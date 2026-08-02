@@ -1,6 +1,20 @@
 export const MSG_CASI = '¡Casi!';
 export const MSG_BIEN = '¡Muy bien!';
+export const MSG_TIEMPO = '¡Se pasó el tiempo!';
 export const MSG_CINCO_EJERCICIOS = '¡Muy bien, hiciste 5 ejercicios!';
+/** Tiempo base (ms) que tarda el camión en llegar al cruce. */
+export const CAMION_TIEMPO_MS = 7000;
+/** Cambio de velocidad por acierto / error (0.04 = 4 %). */
+export const CAMION_CAMBIO_VELOCIDAD = 0.04;
+/** Tope de bonus de velocidad (0.5 = +50 %). */
+export const CAMION_BONUS_MAX = 0.5;
+/** Tiempo mínimo (ms) para que siga siendo jugable. */
+export const CAMION_TIEMPO_MIN_MS = 2800;
+/** Fútbol: segundos iniciales del temporizador opcional. */
+export const FUTBOL_TIMER_INICIAL = 15;
+/** Fútbol: mínimo / máximo de segundos por ronda con temporizador. */
+export const FUTBOL_TIMER_MIN = 3;
+export const FUTBOL_TIMER_MAX = 30;
 export const VINCULAR_GRUPOS = 4;
 export const VINCULAR_NUMEROS_SIN_PAR = 2;
 export const EMOJIS_CONTAR = ['🍎', '⭐', '🐟', '🌸', '⚽', '🐞', '🍪', '🎈', '🚗', '🦋'];
@@ -67,6 +81,8 @@ export const NOMBRES_JUEGO = {
     'palabra-imagen': 'Palabra',
     'imagen-palabra': 'Imagen',
     explorar: 'Explorar',
+    camion: 'Camión',
+    futbol: 'Fútbol',
     contar: 'Contar',
     vincular: 'Unir',
     'escribir-numero': 'Escribir',
@@ -79,16 +95,18 @@ export const NOMBRES_JUEGO = {
 
 export const MIN_SILABAS_JUEGO = 2;
 export const JUEGOS_ALEATORIOS = [
-    'silabas', 'palabra-imagen', 'imagen-palabra',
+    'silabas', 'palabra-imagen', 'imagen-palabra', 'camion', 'futbol',
     'contar', 'vincular', 'escribir-numero', 'elegir-numero',
     'sumar-escribir', 'sumar-elegir', 'restar-escribir'
 ];
 export const IDS_SIGUIENTE = [
-    'btn-siguiente', 'btn-pi-siguiente', 'btn-ip-siguiente',
+    'btn-siguiente', 'btn-pi-siguiente', 'btn-ip-siguiente', 'btn-camion-siguiente',
+    'btn-futbol-siguiente',
     'btn-contar-siguiente', 'btn-vincular-siguiente',
     'btn-en-siguiente', 'btn-el-siguiente',
     'btn-se-siguiente', 'btn-sel-siguiente', 'btn-re-siguiente'
 ];
+
 export const AUTO_SIGUIENTE_MS = 2200;
 
 export const VOZ = {
@@ -102,5 +120,6 @@ export const VOZ = {
 
 export const MENSAJE_AUDIO = {
     [MSG_CASI]: 'casi',
-    [MSG_BIEN]: 'muy-bien'
+    [MSG_BIEN]: 'muy-bien',
+    [MSG_TIEMPO]: 'casi'
 };

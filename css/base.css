@@ -200,6 +200,7 @@ body.modo-lectura-facil .suma-cantidad {
 }
 
 .pantalla-juego {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
@@ -220,6 +221,29 @@ body.modo-lectura-facil .suma-cantidad {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
 .oculto { display: none !important; }
+
+/* Aviso global «¡Muy bien!» / «¡Casi!»: fuera del layout de cada juego. */
+.feedback-toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(72px, calc(env(safe-area-inset-bottom) + 64px));
+    transform: translateX(-50%);
+    z-index: 200;
+    pointer-events: none;
+    text-align: center;
+    font-size: calc(clamp(1rem, 3vh, 1.3rem) * var(--texto-escala, 1));
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0.45em 1em;
+    max-width: min(92vw, 420px);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 6px 20px rgba(1, 87, 155, 0.2);
+}
+
+.feedback-toast.ok { color: #2e7d32; }
+.feedback-toast.mal { color: #c62828; }
 
 h1 {
     color: #0288d1;

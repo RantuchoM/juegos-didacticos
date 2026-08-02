@@ -100,7 +100,7 @@ button.accion:active {
 
 .icon-parlante { width: clamp(32px, 6vh, 44px); height: clamp(32px, 6vh, 44px); }
 
-/* --- SÃ­labas --- */
+/* --- S?labas --- */
 .silabas-header {
     display: flex;
     align-items: center;
@@ -286,18 +286,6 @@ body.silabas-dragging .zonas-respuesta {
     touch-action: none;
 }
 
-.mensaje-silabas {
-    text-align: center;
-    font-size: clamp(1rem, 3vh, 1.25rem);
-    font-weight: 700;
-    min-height: 1.2em;
-    margin-bottom: clamp(4px, 1vh, 8px);
-    flex-shrink: 0;
-}
-
-.mensaje-silabas.ok { color: #2e7d32; }
-.mensaje-silabas.mal { color: #c62828; }
-
 .btn-siguiente {
     display: block;
     margin: 0 auto;
@@ -313,12 +301,27 @@ body.silabas-dragging .zonas-respuesta {
     flex-shrink: 0;
 }
 
+/*
+ * Reserva el hueco aunque esté «oculto»: si usamos display:none, al mostrar
+ * «Siguiente» se levantan la barra de dificultad y el resto del pie.
+ */
+button.btn-siguiente.oculto {
+    display: block !important;
+    visibility: hidden;
+    pointer-events: none;
+    box-shadow: none;
+}
+
 .btn-siguiente:active {
     transform: translateY(4px);
     box-shadow: 0 2px 0 #43a047;
 }
 
-/* --- Quiz (palabraâ†”imagen) --- */
+button.btn-siguiente.oculto:active {
+    transform: none;
+}
+
+/* --- Quiz (palabra?imagen) --- */
 .quiz-header {
     display: flex;
     align-items: center;
@@ -331,10 +334,39 @@ body.silabas-dragging .zonas-respuesta {
     gap: 8px;
 }
 
-.quiz-header .btn-volver {
+.quiz-header .btn-volver,
+.quiz-header .btn-restaurar-objetos {
     min-height: 44px;
     padding: 10px 14px;
     flex-shrink: 0;
+}
+
+.quiz-header-acciones {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.quiz-header-acciones .btn-volver,
+.quiz-header-acciones .btn-restaurar-objetos {
+    margin-bottom: 0;
+    align-self: auto;
+}
+
+.btn-restaurar-objetos {
+    margin: 0;
+    border: none;
+    border-radius: 12px;
+    background: #ffe082;
+    color: #f57f17;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: clamp(0.8rem, 2.3vw, 0.95rem);
+}
+
+.btn-restaurar-objetos:active {
+    transform: scale(0.96);
 }
 
 .palabra-grande {
@@ -431,7 +463,7 @@ body.silabas-dragging .zonas-respuesta {
     padding: 0;
     cursor: pointer;
     overflow: hidden;
-    /* Velo fijo, bastante opaco; sin animaciÃ³n */
+    /* Velo fijo, bastante opaco; sin animaci?n */
     background: rgba(224, 247, 250, 0.92);
     display: flex;
     align-items: center;
@@ -550,17 +582,11 @@ body.modo-lectura-facil .spoiler-telegram {
     animation: sacudir 0.4s ease;
 }
 
-.mensaje-quiz {
-    text-align: center;
-    font-size: clamp(1rem, 3vh, 1.25rem);
-    font-weight: 700;
-    min-height: 1.2em;
-    margin-bottom: clamp(4px, 1vh, 8px);
-    flex-shrink: 0;
+/* Huecos viejos en cada juego: el aviso vive en #feedback-toast (body). */
+.mensaje-quiz,
+.mensaje-silabas {
+    display: none !important;
 }
-
-.mensaje-quiz.ok { color: #2e7d32; }
-.mensaje-quiz.mal { color: #c62828; }
 
 .quiz-imagen-central {
     font-size: clamp(3rem, min(18vw, 14vh), 6rem);
@@ -591,7 +617,7 @@ body.modo-lectura-facil .spoiler-telegram {
     animation: pulso 0.5s ease;
 }
 
-/* --- Explorar catÃ¡logo --- */
+/* --- Explorar cat?logo --- */
 .explorar-ayuda {
     margin: 0 0 clamp(6px, 1vh, 10px);
     text-align: center;
@@ -662,4 +688,722 @@ body.modo-lectura-facil .spoiler-telegram {
     line-height: 1.15;
     text-transform: inherit;
     word-break: break-word;
+}
+
+/* --- Camion --- */
+.camion-aciertos {
+    font-weight: 800;
+    color: #ef6c00;
+    font-size: calc(clamp(0.95rem, 3.2vw, 1.15rem) * var(--texto-escala, 1));
+}
+
+.camion-aciertos.subio-velocidad {
+    color: #c62828;
+}
+
+.camion-ayuda {
+    text-align: center;
+    margin: 0 0 clamp(4px, 1vh, 8px);
+    color: #0277bd;
+    font-weight: 600;
+    font-size: calc(clamp(0.85rem, 2.8vw, 1rem) * var(--texto-escala, 1));
+    flex-shrink: 0;
+}
+
+.camion-escena {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    margin-bottom: clamp(4px, 1vh, 8px);
+}
+
+.camion-mundo {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    border-radius: clamp(16px, 3vh, 24px);
+    background: linear-gradient(180deg, #fff8e7 0%, #ffe0b2 55%, #ffcc80 100%);
+    border: 5px solid #ffb74d;
+    box-shadow: 0 6px 0 #ffcc80;
+    overflow: hidden;
+    touch-action: none;
+    cursor: ns-resize;
+    --camion-top-0: 18%;
+    --camion-top-1: 50%;
+    --camion-top-2: 82%;
+}
+
+.camion-rutas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.camion-tronco,
+.camion-rama,
+.camion-poste {
+    position: absolute;
+    background: #455a64;
+    box-shadow: inset 0 0 0 2px rgba(236, 239, 241, 0.35);
+}
+
+.camion-tronco {
+    left: 4%;
+    width: 42%;
+    top: calc(var(--camion-top-1) - 11px);
+    height: 22px;
+    border-radius: 11px;
+}
+
+.camion-poste {
+    left: 42%;
+    width: 22px;
+    top: calc(var(--camion-top-0) - 11px);
+    height: calc(var(--camion-top-2) - var(--camion-top-0) + 22px);
+    border-radius: 11px;
+}
+
+.camion-rama {
+    left: 42%;
+    width: 34%;
+    height: 22px;
+    border-radius: 11px;
+}
+
+.camion-rama-0 { top: calc(var(--camion-top-0) - 11px); }
+.camion-rama-1 { top: calc(var(--camion-top-1) - 11px); }
+.camion-rama-2 { top: calc(var(--camion-top-2) - 11px); }
+
+.camion-vehiculo {
+    position: absolute;
+    left: 3%;
+    top: var(--camion-top-1);
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: row;
+    direction: ltr;
+    align-items: center;
+    gap: 0;
+    z-index: 2;
+    pointer-events: none;
+    transition: none;
+    will-change: left, top, transform;
+}
+
+.camion-vehiculo.llegando {
+    transition: left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in;
+}
+
+/* El emoji del camion mira a la izquierda; se espeja para mirar a la derecha. */
+.camion-cabina {
+    display: inline-block;
+    font-size: clamp(1.5rem, 6.5vw, 2.3rem);
+    line-height: 1;
+    transform: scaleX(-1);
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.12));
+}
+
+.camion-caja {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: clamp(72px, 20vw, 120px);
+    max-width: min(48vw, 200px);
+    min-height: clamp(1.6rem, 6vh, 2.4rem);
+    margin-right: -10px;
+    padding: clamp(5px, 1vh, 9px) clamp(7px, 1.6vw, 11px);
+    border-radius: 10px;
+    background: #fff;
+    border: 3px solid #37474f;
+    box-shadow: 0 3px 0 #90a4ae;
+    color: #01579b;
+    font-weight: 800;
+    font-size: calc(clamp(0.85rem, 3.2vw, 1.25rem) * var(--texto-escala, 1));
+    line-height: 1.1;
+    text-transform: inherit;
+    white-space: nowrap;
+    overflow: visible;
+    z-index: 1;
+}
+
+.camion-destinos {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(28%, 130px);
+    z-index: 3;
+    pointer-events: none;
+}
+
+.camion-destino {
+    position: absolute;
+    right: 6%;
+    width: 88%;
+    aspect-ratio: 1;
+    max-height: 28%;
+    border: 4px solid #4fc3f7;
+    border-radius: clamp(12px, 2.5vh, 18px);
+    background: white;
+    box-shadow: 0 4px 0 #b3e5fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1.5rem, min(8vw, 7vh), 2.6rem);
+    padding: 4px;
+    transform: translateY(-50%);
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.camion-destino[data-slot="0"] { top: var(--camion-top-0); }
+.camion-destino[data-slot="1"] { top: var(--camion-top-1); }
+.camion-destino[data-slot="2"] { top: var(--camion-top-2); }
+
+.camion-destino svg {
+    width: clamp(32px, min(14vw, 11vh), 56px);
+    height: auto;
+    max-height: 85%;
+}
+
+.camion-destino.rumbo {
+    border-color: #fb8c00;
+    box-shadow: 0 4px 0 #ffcc80, 0 0 0 3px rgba(251, 140, 0, 0.35);
+    background: #fff3e0;
+}
+
+.camion-destino.correcta {
+    border-color: #66bb6a;
+    box-shadow: 0 4px 0 #a5d6a7;
+    background: #e8f5e9;
+}
+
+.camion-destino.incorrecta {
+    border-color: #e57373;
+    box-shadow: 0 4px 0 #ef9a9a;
+    background: #ffebee;
+}
+
+.camion-timon {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.camion-timon-btn {
+    width: clamp(48px, 12vw, 64px);
+    height: clamp(48px, 12vw, 64px);
+    border: none;
+    border-radius: 16px;
+    background: #0288d1;
+    color: #fff;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 800;
+    box-shadow: 0 5px 0 #01579b;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.camion-timon-btn:active,
+.camion-timon-btn.pulsado {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #01579b;
+    background: #0277bd;
+}
+
+.camion-mundo.rama-activa-0 .camion-rama-0,
+.camion-mundo.rama-activa-1 .camion-rama-1,
+.camion-mundo.rama-activa-2 .camion-rama-2 {
+    background: #ff8f00;
+    box-shadow: inset 0 0 0 2px rgba(255, 243, 224, 0.55);
+}
+
+/* Vista vertical: avanza de abajo hacia arriba */
+.camion-mundo.camion-vertical {
+    cursor: ew-resize;
+    --camion-lane-0: 18%;
+    --camion-lane-1: 50%;
+    --camion-lane-2: 82%;
+}
+
+.camion-mundo.camion-vertical .camion-tronco {
+    left: calc(var(--camion-lane-1) - 11px);
+    width: 22px;
+    top: 38%;
+    height: 54%;
+    border-radius: 11px;
+}
+
+.camion-mundo.camion-vertical .camion-poste {
+    left: calc(var(--camion-lane-0) - 11px);
+    width: calc(var(--camion-lane-2) - var(--camion-lane-0) + 22px);
+    top: 38%;
+    height: 22px;
+    border-radius: 11px;
+}
+
+.camion-mundo.camion-vertical .camion-rama {
+    top: 6%;
+    width: 22px;
+    height: 34%;
+    border-radius: 11px;
+}
+
+.camion-mundo.camion-vertical .camion-rama-0 { left: calc(var(--camion-lane-0) - 11px); top: 6%; }
+.camion-mundo.camion-vertical .camion-rama-1 { left: calc(var(--camion-lane-1) - 11px); top: 6%; }
+.camion-mundo.camion-vertical .camion-rama-2 { left: calc(var(--camion-lane-2) - 11px); top: 6%; }
+
+.camion-mundo.camion-vertical .camion-vehiculo {
+    transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.camion-mundo.camion-vertical .camion-vehiculo.llegando {
+    transition: left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in;
+}
+
+/* Compensa la rotaci?n del veh?culo para que la palabra se lea derecha. */
+.camion-mundo.camion-vertical .camion-caja {
+    transform: rotate(90deg);
+    margin-right: -14px;
+}
+
+.camion-mundo.camion-vertical .camion-destinos {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    width: 100%;
+    height: min(30%, 130px);
+}
+
+.camion-mundo.camion-vertical .camion-destino {
+    top: 6%;
+    right: auto;
+    width: min(26%, 110px);
+    max-height: 88%;
+    transform: translateX(-50%);
+}
+
+.camion-mundo.camion-vertical .camion-destino[data-slot="0"] { left: var(--camion-lane-0); top: 6%; }
+.camion-mundo.camion-vertical .camion-destino[data-slot="1"] { left: var(--camion-lane-1); top: 6%; }
+.camion-mundo.camion-vertical .camion-destino[data-slot="2"] { left: var(--camion-lane-2); top: 6%; }
+
+.camion-mundo.camion-vertical .camion-timon {
+    left: 50%;
+    right: auto;
+    bottom: 8px;
+    flex-direction: row;
+    transform: translateX(-50%);
+}
+
+@media (max-height: 520px) {
+    .camion-ayuda { display: none; }
+}
+
+/* --- Futbol --- */
+.futbol-ayuda {
+    text-align: center;
+    margin: 0 0 clamp(4px, 1vh, 8px);
+    color: #2e7d32;
+    font-weight: 600;
+    font-size: calc(clamp(0.85rem, 2.8vw, 1rem) * var(--texto-escala, 1));
+    flex-shrink: 0;
+}
+
+.futbol-escena {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(6px, 1.2vh, 10px);
+    margin-bottom: clamp(4px, 1vh, 8px);
+}
+
+.futbol-imagen {
+    font-size: clamp(2.4rem, min(14vw, 12vh), 4.5rem);
+    text-align: center;
+    background: white;
+    border: 6px solid #4fc3f7;
+    border-radius: clamp(16px, 3vh, 24px);
+    padding: clamp(6px, 1.2vh, 12px);
+    box-shadow: 0 8px 0 #b3e5fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-height: 0;
+    max-height: clamp(64px, 14vh, 110px);
+    line-height: 1;
+}
+
+.futbol-imagen svg {
+    width: clamp(48px, min(18vw, 12vh), 96px);
+    height: auto;
+    max-height: 100%;
+}
+
+.futbol-imagen.acierto {
+    border-color: #66bb6a;
+    box-shadow: 0 8px 0 #a5d6a7;
+}
+
+.futbol-cancha {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    border-radius: clamp(16px, 3vh, 24px);
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(180deg, #66bb6a 0%, #43a047 45%, #2e7d32 100%);
+    border: 5px solid #1b5e20;
+    box-shadow: 0 6px 0 #81c784;
+    overflow: hidden;
+    touch-action: manipulation;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Landscape: goal on top with 3 words in a row; ball below; aim L-R */
+.futbol-arco {
+    position: relative;
+    flex: 0 0 auto;
+    margin: clamp(8px, 1.5vh, 14px) clamp(10px, 3vw, 18px) 0;
+    height: clamp(88px, 22vh, 140px);
+    background: rgba(236, 239, 241, 0.55);
+    border-radius: 4px 4px 0 0;
+    z-index: 2;
+}
+
+.futbol-poste,
+.futbol-largo {
+    position: absolute;
+    background: #eceff1;
+    box-shadow: 0 0 0 2px #90a4ae, inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+    z-index: 3;
+}
+
+.futbol-poste-izq,
+.futbol-poste-der {
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    border-radius: 5px;
+}
+
+.futbol-poste-izq { left: 0; }
+.futbol-poste-der { right: 0; }
+
+.futbol-largo {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    border-radius: 5px;
+}
+
+.futbol-red {
+    position: absolute;
+    inset: 10px 10px 0;
+    background:
+        repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(255, 255, 255, 0.35) 11px, rgba(255, 255, 255, 0.35) 12px),
+        repeating-linear-gradient(90deg, transparent, transparent 11px, rgba(255, 255, 255, 0.35) 11px, rgba(255, 255, 255, 0.35) 12px);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.futbol-timer {
+    position: relative;
+    width: clamp(44px, 10vw, 56px);
+    height: clamp(44px, 10vw, 56px);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.futbol-reloj {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.12));
+}
+
+.futbol-reloj-pista {
+    fill: #fff8e1;
+    stroke: #ffe0b2;
+    stroke-width: 2.5;
+}
+
+.futbol-reloj-arco {
+    fill: none;
+    stroke: #ff9800;
+    stroke-width: 4.5;
+    stroke-linecap: butt;
+    /* Origen a las 12; el trazo avanza en sentido horario */
+    transform: rotate(-90deg);
+    transform-origin: 18px 18px;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 0;
+    transition: stroke 0.15s;
+}
+
+.futbol-timer-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: calc(clamp(0.7rem, 2.4vw, 0.9rem) * var(--texto-escala, 1));
+    font-variant-numeric: tabular-nums;
+    color: #e65100;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow: 0 0 3px #fff8e1, 0 0 3px #fff8e1;
+}
+
+.futbol-timer.urgente .futbol-reloj-arco {
+    stroke: #e53935;
+}
+
+.futbol-timer.urgente .futbol-timer-num {
+    color: #c62828;
+}
+
+.futbol-timer.urgente .futbol-reloj-pista {
+    fill: #ffebee;
+    stroke: #ffcdd2;
+}
+
+.futbol-palabras {
+    position: absolute;
+    inset: 14px 10px 8px;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: clamp(18px, 6vw, 40px);
+    z-index: 4;
+}
+
+.futbol-palabra {
+    flex: 0 1 28%;
+    max-width: 30%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(4px, 1vh, 8px) clamp(6px, 1.4vw, 10px);
+    border: 3px solid #ffeb3b;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 3px 0 #fbc02d;
+    color: #5d4037;
+    font-weight: 800;
+    font-size: calc(clamp(0.75rem, min(3.2vw, 2.8vh), 1.15rem) * var(--texto-escala, 1));
+    line-height: 1.1;
+    text-align: center;
+    text-transform: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    writing-mode: horizontal-tb;
+    transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+}
+
+.futbol-palabra.correcta {
+    border-color: #66bb6a;
+    box-shadow: 0 3px 0 #a5d6a7;
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.futbol-palabra.incorrecta {
+    border-color: #e57373;
+    box-shadow: 0 3px 0 #ef9a9a;
+    background: #ffebee;
+    color: #b71c1c;
+    animation: sacudir 0.4s ease;
+}
+
+.futbol-area-tiro {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 72px;
+    z-index: 3;
+    overflow: visible;
+}
+
+.futbol-pelota {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(8px, 2vh, 16px);
+    transform: translateX(-50%);
+    width: clamp(52px, 12vw, 72px);
+    height: clamp(52px, 12vw, 72px);
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    padding: 0;
+    font-size: clamp(2.2rem, 9vw, 3.2rem);
+    line-height: 1;
+    cursor: pointer;
+    z-index: 5;
+    filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.18));
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: none;
+    will-change: left, top, transform;
+}
+
+.futbol-pelota:focus-visible {
+    outline: 3px solid #fff59d;
+    outline-offset: 3px;
+}
+
+.futbol-pelota.volando {
+    pointer-events: none;
+    transition: none;
+    z-index: 6;
+}
+
+.futbol-linea {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(34px, 7vh, 52px);
+    width: 4px;
+    height: clamp(48px, 18vh, 120px);
+    margin-left: -2px;
+    transform-origin: 50% 100%;
+    background: linear-gradient(180deg, #ffeb3b 0%, #ff8f00 100%);
+    border-radius: 3px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+    pointer-events: none;
+    z-index: 4;
+}
+
+.futbol-linea::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 12px solid #ffeb3b;
+}
+
+/* Portrait: words on the right; aim top-bottom */
+@media (orientation: portrait) {
+    .futbol-cancha {
+        flex-direction: row;
+    }
+
+    .futbol-arco {
+        order: 2;
+        flex: 0 0 min(48%, 240px);
+        width: min(48%, 240px);
+        height: auto;
+        margin: clamp(10px, 2vh, 16px) clamp(8px, 2vw, 12px) clamp(10px, 2vh, 16px) 0;
+        border-radius: 0 4px 4px 0;
+    }
+
+    /* Goal opens toward the ball (left): crossbar on the right */
+    .futbol-poste-izq {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        width: auto;
+        height: 10px;
+    }
+
+    .futbol-poste-der {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        height: 10px;
+    }
+
+    .futbol-largo {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: auto;
+        width: 10px;
+        height: auto;
+    }
+
+    .futbol-red {
+        inset: 10px;
+    }
+
+    .futbol-palabras {
+        inset: 12px 10px;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: stretch;
+        gap: clamp(16px, 5vh, 36px);
+    }
+
+    .futbol-palabra {
+        flex: 0 0 auto;
+        max-width: none;
+        max-height: none;
+        width: 100%;
+        min-height: clamp(2.2rem, 7vh, 3rem);
+        font-size: calc(clamp(0.85rem, 3.6vw, 1.2rem) * var(--texto-escala, 1));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .futbol-area-tiro {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .futbol-pelota {
+        left: clamp(10px, 4vw, 22px);
+        bottom: 50%;
+        transform: translateY(50%);
+    }
+
+    .futbol-linea {
+        left: clamp(36px, 10vw, 58px);
+        bottom: 50%;
+        width: clamp(48px, 22vw, 120px);
+        height: 4px;
+        margin-left: 0;
+        margin-bottom: -2px;
+        transform-origin: 0% 50%;
+        background: linear-gradient(90deg, #ff8f00 0%, #ffeb3b 100%);
+    }
+
+    .futbol-linea::after {
+        top: 50%;
+        left: auto;
+        right: -2px;
+        transform: translateY(-50%);
+        border-left: 12px solid #ffeb3b;
+        border-right: none;
+        border-bottom: 8px solid transparent;
+        border-top: 8px solid transparent;
+    }
+}
+
+@media (max-height: 520px) {
+    .futbol-ayuda { display: none; }
 }

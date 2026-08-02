@@ -293,6 +293,8 @@
 .btn-toggle-spoiler,
 .btn-toggle-autovoz,
 .btn-toggle-similares,
+.btn-toggle-distractores,
+.btn-toggle-timer,
 .btn-toggle-tamano {
     min-width: 48px;
     height: 48px;
@@ -320,6 +322,8 @@
 .btn-toggle-spoiler:active,
 .btn-toggle-autovoz:active,
 .btn-toggle-similares:active,
+.btn-toggle-distractores:active,
+.btn-toggle-timer:active,
 .btn-toggle-tamano:active {
     transform: translateY(3px);
     box-shadow: 0 1px 0 #fbc02d;
@@ -436,6 +440,40 @@
     color: white;
 }
 
+.btn-toggle-distractores {
+    font-size: 1.45rem;
+    background: #fff3e0;
+    box-shadow: 0 4px 0 #ffb74d;
+    color: #e65100;
+}
+
+.btn-toggle-distractores:active {
+    box-shadow: 0 1px 0 #ffb74d;
+}
+
+.btn-toggle-distractores.activo {
+    background: #ff9800;
+    box-shadow: 0 4px 0 #ef6c00;
+    color: white;
+}
+
+.btn-toggle-timer {
+    font-size: 1.25rem;
+    background: #e3f2fd;
+    box-shadow: 0 4px 0 #90caf9;
+    color: #1565c0;
+}
+
+.btn-toggle-timer:active {
+    box-shadow: 0 1px 0 #90caf9;
+}
+
+.btn-toggle-timer.activo {
+    background: #1e88e5;
+    box-shadow: 0 4px 0 #1565c0;
+    color: white;
+}
+
 .menu-accesibilidad {
     display: flex;
     justify-content: flex-end;
@@ -458,6 +496,8 @@
     .btn-toggle-spoiler,
     .btn-toggle-autovoz,
     .btn-toggle-similares,
+    .btn-toggle-timer,
+    .btn-toggle-distractores,
     .btn-toggle-tamano {
         min-width: 40px;
         height: 40px;
@@ -477,6 +517,8 @@ body.modo-mayusculas .palabra-grande,
 body.modo-mayusculas .opcion-palabra,
 body.modo-mayusculas .silaba-click,
 body.modo-mayusculas .explorar-palabra,
+body.modo-mayusculas .camion-caja,
+body.modo-mayusculas .futbol-palabra,
 body.modo-mayusculas #menu h1,
 body.modo-mayusculas .menu-seccion,
 body.modo-mayusculas .btn-juego {
@@ -490,6 +532,8 @@ body.modo-minusculas .palabra-grande,
 body.modo-minusculas .opcion-palabra,
 body.modo-minusculas .silaba-click,
 body.modo-minusculas .explorar-palabra,
+body.modo-minusculas .camion-caja,
+body.modo-minusculas .futbol-palabra,
 body.modo-minusculas #menu h1,
 body.modo-minusculas .menu-seccion,
 body.modo-minusculas .btn-juego {
