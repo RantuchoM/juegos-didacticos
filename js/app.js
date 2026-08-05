@@ -903,23 +903,24 @@ function crearObjetoItem(emoji, fontSize) {
 }
 
 /**
- * Dibuja emojis; si hay más de 10, agrupa de a 10 (marco) + unidades sueltas.
- * @param {string} [claseAgrupado='objetos-agrupados'] clase al contenedor cuando cantidad > 10
+ * Dibuja emojis; desde 10, agrupa de a 10 (marco) + unidades sueltas.
+ * @param {string} [claseAgrupado='objetos-agrupados'] clase al contenedor cuando cantidad >= 10
  */
 function renderObjetosAgrupados(contenedor, emoji, cantidad, tamanioFn, claseAgrupado = 'objetos-agrupados') {
     contenedor.classList.remove('objetos-movibles');
     contenedor.style.minHeight = '';
     contenedor.style.minWidth = '';
+    contenedor.style.maxWidth = '';
     contenedor.style.width = '';
     contenedor.style.height = '';
     contenedor.innerHTML = '';
     if (claseAgrupado) {
-        contenedor.classList.toggle(claseAgrupado, cantidad > 10);
+        contenedor.classList.toggle(claseAgrupado, cantidad >= 10);
     }
 
     if (cantidad <= 0) return;
 
-    if (cantidad <= 10) {
+    if (cantidad < 10) {
         const fz = tamanioFn(cantidad);
         for (let i = 0; i < cantidad; i++) {
             contenedor.appendChild(crearObjetoItem(emoji, fz));
@@ -1057,6 +1058,23 @@ function activarMovimientoObjetos(container) {
     const units = unidadesArrastreObjetos(container);
     if (!units.length) return;
 
+    // Fijar ancho al del padre ANTES de medir: si no, min-width:auto ensancha
+    // el flex al contenido (p. ej. 10 globos en una fila) y en Suma se salen
+    // del recuadro blanco al absolutizar.
+    const parent = container.parentElement;
+    if (parent) {
+        const parentStyle = getComputedStyle(parent);
+        const padX = (parseFloat(parentStyle.paddingLeft) || 0)
+            + (parseFloat(parentStyle.paddingRight) || 0);
+        const availW = Math.max(0, Math.floor(parent.clientWidth - padX));
+        if (availW > 0) {
+            container.style.minWidth = '0';
+            container.style.maxWidth = '100%';
+            container.style.width = `${availW}px`;
+            void container.offsetWidth;
+        }
+    }
+
     const cRect = container.getBoundingClientRect();
     const style = getComputedStyle(container);
     const borderLeft = parseFloat(style.borderLeftWidth) || 0;
@@ -1086,24 +1104,27 @@ function activarMovimientoObjetos(container) {
     }
     container.style.minWidth = `${boxW}px`;
     container.style.width = `${boxW}px`;
+    container.style.maxWidth = '100%';
     container.style.minHeight = `${boxH}px`;
     container.style.height = `${boxH}px`;
     container.classList.add('objetos-movibles');
 
-    layouts.forEach(({ el, left, top, width }) => {
+    layouts.forEach(({ el, left, top, width, height }) => {
         if (el.parentElement !== container) {
             container.appendChild(el);
         }
         el.classList.add('objeto-arrastrable');
         el.style.position = 'absolute';
-        el.style.left = `${Math.max(0, left)}px`;
-        el.style.top = `${Math.max(0, top)}px`;
+        const maxL = Math.max(0, boxW - Math.ceil(width));
+        const maxT = Math.max(0, boxH - Math.ceil(height));
+        el.style.left = `${Math.min(maxL, Math.max(0, left))}px`;
+        el.style.top = `${Math.min(maxT, Math.max(0, top))}px`;
         el.style.margin = '0';
         el.style.touchAction = 'none';
         el.style.cursor = 'grab';
         el.style.zIndex = '1';
         if (el.classList.contains('marco-diez')) {
-            el.style.width = `${width}px`;
+            el.style.width = `${Math.min(width, boxW)}px`;
             el.style.boxSizing = 'border-box';
         }
         el.addEventListener('pointerdown', onPointerDownObjeto);

@@ -1,9 +1,9 @@
 {
-  "buildId": "v72",
+  "buildId": "v73",
   "title": "¡Novedades!",
   "changes": [
-    "Suma: ya se pueden elegir las opciones con números de dos cifras",
-    "El sonido del toque ya no traba la respuesta en el celular",
-    "Los dibujos grandes ya no empujan las opciones fuera de la pantalla"
+    "Suma: los dibujos quedan ordenados dentro de cada recuadro",
+    "El 10 se muestra en su marco (5×2), sin salirse del cuadro",
+    "Mejor distribución en el celular"
   ]
 }
