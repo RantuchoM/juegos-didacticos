@@ -1,9 +1,9 @@
 {
-  "buildId": "v71",
+  "buildId": "v72",
   "title": "¡Novedades!",
   "changes": [
-    "«¡Casi!» desaparece solo a los dos segundos",
-    "«Siguiente» ya no levanta la barra de abajo al acertar",
-    "El aviso de bien/casi sigue flotando sin mover el juego"
+    "Suma: ya se pueden elegir las opciones con números de dos cifras",
+    "El sonido del toque ya no traba la respuesta en el celular",
+    "Los dibujos grandes ya no empujan las opciones fuera de la pantalla"
   ]
 }

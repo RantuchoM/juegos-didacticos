@@ -300,23 +300,29 @@ function reanudarAudioSiHaceFalta(ctx) {
 const FREQ_PULSACION_NUMERO = [440, 494, 523, 587, 659, 698, 784, 880, 988, 1047];
 
 function sonidoPulsacionNumero(digito) {
-    const ctx = getAudio();
-    reanudarAudioSiHaceFalta(ctx);
-    const idx = typeof digito === 'string' && digito >= '0' && digito <= '9'
-        ? parseInt(digito, 10)
-        : 5;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = FREQ_PULSACION_NUMERO[idx];
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    const t = ctx.currentTime;
-    const dur = 0.04;
-    gain.gain.setValueAtTime(0.1, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    osc.start(t);
-    osc.stop(t + dur);
+    try {
+        const ctx = getAudio();
+        reanudarAudioSiHaceFalta(ctx);
+        const texto = String(digito ?? '');
+        // Solo un dígito 0–9 indexa la tabla. Comparar "29" <= "9" es true en JS
+        // y parseInt("29") dejaba frequency=NaN: en Suma el toque moría antes de elegir.
+        const idx = /^[0-9]$/.test(texto) ? Number(texto) : 5;
+        const freq = FREQ_PULSACION_NUMERO[idx] ?? FREQ_PULSACION_NUMERO[5];
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const t = ctx.currentTime;
+        const dur = 0.04;
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.start(t);
+        osc.stop(t + dur);
+    } catch {
+        // El audio nunca debe bloquear la respuesta del juego.
+    }
 }
 
 function sonidoPulsacionLetra() {
@@ -1070,8 +1076,14 @@ function activarMovimientoObjetos(container) {
     });
 
     // Congelar tamaño del flujo normal; si no, al absolutizar el ancho cae a 0.
-    const boxW = Math.ceil(Math.max(cRect.width, container.scrollWidth));
-    const boxH = Math.ceil(Math.max(cRect.height, container.scrollHeight, 72));
+    // No superar max-height: en CSS min-height gana a max-height y en Suma las
+    // opciones quedaban fuera de pantalla (overflow:hidden) en niveles altos.
+    const cssMaxH = parseFloat(style.maxHeight);
+    const boxW = Math.ceil(Math.max(cRect.width, container.clientWidth));
+    let boxH = Math.ceil(Math.max(cRect.height, container.clientHeight, 72));
+    if (Number.isFinite(cssMaxH) && cssMaxH > 0) {
+        boxH = Math.min(boxH, Math.ceil(cssMaxH));
+    }
     container.style.minWidth = `${boxW}px`;
     container.style.width = `${boxW}px`;
     container.style.minHeight = `${boxH}px`;
