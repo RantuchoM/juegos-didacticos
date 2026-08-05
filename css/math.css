@@ -674,6 +674,7 @@ body.vincular-dragging * {
     border-radius: clamp(16px, 3vh, 24px);
     padding: clamp(8px, 1.5vh, 12px) clamp(6px, 1.5vw, 10px);
     box-shadow: 0 8px 0 #b3e5fc;
+    overflow: hidden;
 }
 
 .suma-objetos {
@@ -684,9 +685,21 @@ body.vincular-dragging * {
     align-content: center;
     align-items: center;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     min-height: clamp(56px, 14vw, 88px);
     max-height: clamp(72px, 20vh, 120px);
     overflow: hidden;
+}
+
+/* Marco de 10: que quepa en el recuadro angosto de Suma */
+.suma-objetos .objetos-decena.marco-diez {
+    max-width: 100%;
+    width: min(100%, 11rem);
+    box-sizing: border-box;
+    justify-items: center;
+    align-items: center;
 }
 
 .suma-objetos .objeto-item {
